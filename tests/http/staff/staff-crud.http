@@ -1,0 +1,80 @@
+﻿### PearlDesk Staff API Tests
+### Base URL: http://localhost:5199
+### All endpoints require Authorization header (JWT Bearer token)
+
+@baseUrl = http://localhost:5199/api/v1
+@authToken = Bearer REPLACE_WITH_VALID_JWT
+
+### ✅ Happy path — Create staff member (201)
+POST {{baseUrl}}/staff-members
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "email": "jane.smith@clinic.com",
+  "staffType": "Dentist",
+  "role": "Dentist",
+  "phone": "+1234567890"
+}
+
+###
+
+### ✅ Happy path — Get staff member by ID (200)
+GET {{baseUrl}}/staff-members/00000000-0000-0000-0000-000000000001
+Authorization: {{authToken}}
+
+###
+
+### ✅ Happy path — List staff members (200)
+GET {{baseUrl}}/staff-members?page=1&pageSize=10
+Authorization: {{authToken}}
+
+###
+
+### ✅ Happy path — Update staff member (200)
+PUT {{baseUrl}}/staff-members/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@clinic.com",
+  "staffType": "Dentist",
+  "role": "Dentist",
+  "phone": "+1234567890",
+  "isActive": true
+}
+
+###
+
+### ✅ Happy path — Delete staff member (204)
+DELETE {{baseUrl}}/staff-members/00000000-0000-0000-0000-000000000001
+Authorization: {{authToken}}
+
+###
+
+### ❌ Validation error — Create staff member with missing required fields (400)
+POST {{baseUrl}}/staff-members
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "firstName": "",
+  "lastName": "",
+  "email": "not-an-email"
+}
+
+###
+
+### 🔒 Unauthorized — No token (401)
+GET {{baseUrl}}/staff-members
+
+###
+
+### 🔍 Not found — Get non-existent staff member (404)
+GET {{baseUrl}}/staff-members/00000000-0000-0000-0000-000000000000
+Authorization: {{authToken}}
+

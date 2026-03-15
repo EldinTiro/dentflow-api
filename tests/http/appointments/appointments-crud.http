@@ -1,0 +1,78 @@
+﻿### PearlDesk Appointments API Tests
+### Base URL: http://localhost:5199
+### All endpoints require Authorization header (JWT Bearer token)
+
+@baseUrl = http://localhost:5199/api/v1
+@authToken = Bearer REPLACE_WITH_VALID_JWT
+
+### ✅ Happy path — Book appointment (201)
+POST {{baseUrl}}/appointments
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "patientId": "00000000-0000-0000-0000-000000000001",
+  "providerId": "00000000-0000-0000-0000-000000000002",
+  "appointmentTypeId": "00000000-0000-0000-0000-000000000003",
+  "startTime": "2026-04-01T09:00:00Z",
+  "endTime": "2026-04-01T09:30:00Z",
+  "notes": "Regular checkup"
+}
+
+###
+
+### ✅ Happy path — Get appointment by ID (200)
+GET {{baseUrl}}/appointments/00000000-0000-0000-0000-000000000001
+Authorization: {{authToken}}
+
+###
+
+### ✅ Happy path — List appointments (200)
+GET {{baseUrl}}/appointments?page=1&pageSize=10
+Authorization: {{authToken}}
+
+###
+
+### ✅ Happy path — Confirm appointment (200)
+POST {{baseUrl}}/appointments/00000000-0000-0000-0000-000000000001/confirm
+Authorization: {{authToken}}
+
+###
+
+### ✅ Happy path — Cancel appointment (200)
+POST {{baseUrl}}/appointments/00000000-0000-0000-0000-000000000001/cancel
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "cancellationReason": "Patient requested reschedule"
+}
+
+###
+
+### ✅ Happy path — Complete appointment (200)
+POST {{baseUrl}}/appointments/00000000-0000-0000-0000-000000000001/complete
+Authorization: {{authToken}}
+
+###
+
+### ❌ Validation error — Book appointment with missing required fields (400)
+POST {{baseUrl}}/appointments
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "patientId": "00000000-0000-0000-0000-000000000000"
+}
+
+###
+
+### 🔒 Unauthorized — No token (401)
+GET {{baseUrl}}/appointments
+
+###
+
+### 🔍 Not found — Get non-existent appointment (404)
+GET {{baseUrl}}/appointments/00000000-0000-0000-0000-000000000000
+Authorization: {{authToken}}
+

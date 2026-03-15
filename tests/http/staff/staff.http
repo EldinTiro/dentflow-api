@@ -1,0 +1,61 @@
+﻿@baseUrl = http://localhost:5199
+@tenantSlug = demo
+
+### ✅ Create staff member (201)
+POST {{baseUrl}}/api/v1/staff
+Content-Type: application/json
+X-Tenant: {{tenantSlug}}
+
+{
+  "staffType": "Dentist",
+  "firstName": "Alice",
+  "lastName": "Smith",
+  "email": "alice.smith@demo.com",
+  "phone": "+15551234567",
+  "hireDate": "2024-01-15",
+  "specialty": "General Dentistry",
+  "colorHex": "#3B82F6"
+}
+
+###
+
+### ✅ Get all staff (200)
+GET {{baseUrl}}/api/v1/staff
+X-Tenant: {{tenantSlug}}
+
+###
+
+### ✅ Get staff by ID — replace {id} after creating
+GET {{baseUrl}}/api/v1/staff/00000000-0000-0000-0000-000000000000
+X-Tenant: {{tenantSlug}}
+
+###
+
+### ❌ Not found (404)
+GET {{baseUrl}}/api/v1/staff/ffffffff-ffff-ffff-ffff-ffffffffffff
+X-Tenant: {{tenantSlug}}
+
+###
+
+### ❌ Unauthorized (401)
+GET {{baseUrl}}/api/v1/staff
+
+###
+
+### ❌ Validation error - missing required fields (400)
+POST {{baseUrl}}/api/v1/staff
+Content-Type: application/json
+X-Tenant: {{tenantSlug}}
+
+{
+  "staffType": "",
+  "firstName": "",
+  "lastName": ""
+}
+
+###
+
+### 🗑️ Delete staff member (204)
+DELETE {{baseUrl}}/api/v1/staff/00000000-0000-0000-0000-000000000000
+X-Tenant: {{tenantSlug}}
+

@@ -1,0 +1,73 @@
+﻿@baseUrl = http://localhost:5199
+@tenantSlug = demo
+
+### ✅ Create patient (201)
+POST {{baseUrl}}/api/v1/patients
+Content-Type: application/json
+X-Tenant: {{tenantSlug}}
+
+{
+  "firstName": "John",
+  "lastName": "Patient",
+  "preferredName": "Johnny",
+  "dateOfBirth": "1985-03-20",
+  "gender": "Male",
+  "email": "john.patient@example.com",
+  "phoneMobile": "+15559876543",
+  "preferredContactMethod": "Mobile",
+  "addressLine1": "456 Oak Avenue",
+  "city": "Chicago",
+  "stateProvince": "IL",
+  "postalCode": "60601",
+  "countryCode": "US",
+  "smsOptIn": true,
+  "emailOptIn": true
+}
+
+###
+
+### ✅ List patients (200)
+GET {{baseUrl}}/api/v1/patients
+X-Tenant: {{tenantSlug}}
+
+###
+
+### ✅ Search patients
+GET {{baseUrl}}/api/v1/patients?search=john&page=1&pageSize=10
+X-Tenant: {{tenantSlug}}
+
+###
+
+### ✅ Get patient by ID (200) — replace {id}
+GET {{baseUrl}}/api/v1/patients/00000000-0000-0000-0000-000000000000
+X-Tenant: {{tenantSlug}}
+
+###
+
+### ❌ Patient not found (404)
+GET {{baseUrl}}/api/v1/patients/ffffffff-ffff-ffff-ffff-ffffffffffff
+X-Tenant: {{tenantSlug}}
+
+###
+
+### ❌ Unauthorized (401)
+GET {{baseUrl}}/api/v1/patients
+
+###
+
+### ❌ Validation error (400)
+POST {{baseUrl}}/api/v1/patients
+Content-Type: application/json
+X-Tenant: {{tenantSlug}}
+
+{
+  "firstName": "",
+  "lastName": ""
+}
+
+###
+
+### 🗑️ Delete patient (204) — replace {id}
+DELETE {{baseUrl}}/api/v1/patients/00000000-0000-0000-0000-000000000000
+X-Tenant: {{tenantSlug}}
+

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PearlDesk.Application\PearlDesk.Application.csproj" />
+    <ProjectReference Include="..\PearlDesk.Infrastructure\PearlDesk.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Tenants\PearlDesk.Tenants.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Identity\PearlDesk.Identity.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Staff\PearlDesk.Staff.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Patients\PearlDesk.Patients.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Appointments\PearlDesk.Appointments.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Treatments\PearlDesk.Treatments.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Billing\PearlDesk.Billing.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Notifications\PearlDesk.Notifications.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Documents\PearlDesk.Documents.csproj" />
+    <ProjectReference Include="..\Modules\PearlDesk.Reporting\PearlDesk.Reporting.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FastEndpoints" Version="5.*" />
+    <PackageReference Include="FastEndpoints.Security" Version="5.*" />
+    <PackageReference Include="FastEndpoints.Swagger" Version="5.*" />
+    <PackageReference Include="Finbuckle.MultiTenant.AspNetCore" Version="9.*" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.*" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.*" />
+  </ItemGroup>
+</Project>

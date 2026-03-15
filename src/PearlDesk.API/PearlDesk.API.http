@@ -1,0 +1,6 @@
+@PearlDesk.API_HostAddress = http://localhost:5199
+
+GET {{PearlDesk.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,84 @@
+﻿### PearlDesk Patients API Tests
+### Base URL: http://localhost:5199
+### All endpoints require Authorization header (JWT Bearer token)
+
+@baseUrl = http://localhost:5199/api/v1
+@authToken = Bearer REPLACE_WITH_VALID_JWT
+
+### ✅ Happy path — Create patient (201)
+POST {{baseUrl}}/patients
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "dateOfBirth": "1985-06-15",
+  "gender": "Male",
+  "phoneMobile": "+1234567890",
+  "email": "john.doe@example.com",
+  "addressLine1": "123 Main St",
+  "city": "Anytown",
+  "stateProvince": "CA",
+  "postalCode": "90210",
+  "countryCode": "US"
+}
+
+###
+
+### ✅ Happy path — Get patient by ID (200)
+GET {{baseUrl}}/patients/00000000-0000-0000-0000-000000000001
+Authorization: {{authToken}}
+
+###
+
+### ✅ Happy path — List patients (200)
+GET {{baseUrl}}/patients?page=1&pageSize=10
+Authorization: {{authToken}}
+
+###
+
+### ✅ Happy path — Update patient (200)
+PUT {{baseUrl}}/patients/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "dateOfBirth": "1985-06-15",
+  "gender": "Male",
+  "phoneMobile": "+1234567890",
+  "email": "john.smith@example.com",
+  "status": "Active"
+}
+
+###
+
+### ✅ Happy path — Delete patient (204)
+DELETE {{baseUrl}}/patients/00000000-0000-0000-0000-000000000001
+Authorization: {{authToken}}
+
+###
+
+### ❌ Validation error — Create patient with missing required fields (400)
+POST {{baseUrl}}/patients
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "firstName": "",
+  "lastName": ""
+}
+
+###
+
+### 🔒 Unauthorized — No token (401)
+GET {{baseUrl}}/patients
+
+###
+
+### 🔍 Not found — Get non-existent patient (404)
+GET {{baseUrl}}/patients/00000000-0000-0000-0000-000000000000
+Authorization: {{authToken}}
+

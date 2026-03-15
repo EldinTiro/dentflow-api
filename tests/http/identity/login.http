@@ -1,0 +1,33 @@
+﻿@baseUrl = http://localhost:5000/api/v1
+
+### ✅ Happy path — login as SuperAdmin (200 OK + access token)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "superadmin@pearldesk.local",
+  "password": "SuperAdmin123!@#"
+}
+
+###
+
+### ❌ Unauthorized — wrong password (401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "superadmin@pearldesk.local",
+  "password": "WrongPassword999!"
+}
+
+###
+
+### ❌ Unauthorized — non-existent user (401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nobody@pearldesk.local",
+  "password": "SomePassword123!@#"
+}
+

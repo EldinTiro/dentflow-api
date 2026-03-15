@@ -1,0 +1,75 @@
+﻿@baseUrl = http://localhost:5000/api/v1
+
+### ✅ Happy path — register a new ClinicOwner (201 Created)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "owner@demo-clinic.local",
+  "password": "DemoClinic123!@#",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "role": "ClinicOwner",
+  "tenantId": null
+}
+
+###
+
+### ✅ Happy path — register a Receptionist for a tenant (201 Created)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "receptionist@demo-clinic.local",
+  "password": "Receptionist123!@#",
+  "firstName": "Bob",
+  "lastName": "Jones",
+  "role": "Receptionist",
+  "tenantId": null
+}
+
+###
+
+### ❌ Validation error — missing required fields (400 Bad Request)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "short",
+  "firstName": "",
+  "lastName": "",
+  "role": "Receptionist",
+  "tenantId": null
+}
+
+###
+
+### ❌ Conflict — duplicate email (409 Conflict)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "superadmin@pearldesk.local",
+  "password": "SuperAdmin123!@#",
+  "firstName": "Super",
+  "lastName": "Admin",
+  "role": "SuperAdmin",
+  "tenantId": null
+}
+
+###
+
+### ❌ Validation error — invalid role value (400 Bad Request)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "ValidPass123!@#",
+  "firstName": "Test",
+  "lastName": "User",
+  "role": "HackerRole",
+  "tenantId": null
+}
+

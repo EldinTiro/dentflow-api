@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\PearlDesk.Application\PearlDesk.Application.csproj" />
+    <ProjectReference Include="..\..\PearlDesk.Domain\PearlDesk.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ErrorOr" Version="2.0.1" />
+    <PackageReference Include="FastEndpoints" Version="5.*" />
+    <PackageReference Include="MediatR" Version="14.1.0" />
+  </ItemGroup>
+</Project>
