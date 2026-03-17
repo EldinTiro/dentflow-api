@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore DentFlow.sln
+
+      - name: Build
+        run: dotnet build DentFlow.sln --no-restore -c Release
+
+      - name: Test — Appointments
+        run: dotnet test tests/DentFlow.Appointments.Tests/DentFlow.Appointments.Tests.csproj --no-build -c Release --logger "trx;LogFileName=appointments.trx"
+
+      - name: Test — Identity
+        run: dotnet test tests/DentFlow.Identity.Tests/DentFlow.Identity.Tests.csproj --no-build -c Release --logger "trx;LogFileName=identity.trx"
+
+      - name: Test — Patients
+        run: dotnet test tests/DentFlow.Patients.Tests/DentFlow.Patients.Tests.csproj --no-build -c Release --logger "trx;LogFileName=patients.trx"
+
+      - name: Test — Staff
+        run: dotnet test tests/DentFlow.Staff.Tests/DentFlow.Staff.Tests.csproj --no-build -c Release --logger "trx;LogFileName=staff.trx"
+
+      - name: Test — Tenants
+        run: dotnet test tests/DentFlow.Tenants.Tests/DentFlow.Tenants.Tests.csproj --no-build -c Release --logger "trx;LogFileName=tenants.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/*.trx'

@@ -6,6 +6,7 @@ using FastEndpoints.Swagger;
 using Finbuckle.MultiTenant;
 using DentFlow.Application;
 using DentFlow.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Text.Json.Serialization;
 
@@ -89,6 +90,13 @@ builder.Services.AddRateLimiter(options =>
             })));
 
 var app = builder.Build();
+
+// Apply EF Core migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DentFlow.Infrastructure.Persistence.ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 // Seed roles + SuperAdmin user on startup
 await SuperAdminSeeder.SeedAsync(app.Services);
