@@ -19,7 +19,11 @@ public class AppointmentRescheduleEndpoint(ISender sender) : Endpoint<Reschedule
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new RescheduleAppointmentCommand(id, req.NewStartAt, req.NewEndAt), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError)
+        {
+            foreach (var error in result.Errors) AddError(error.Description);
+            await SendErrorsAsync(cancellation: ct); return;
+        }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -40,7 +44,11 @@ public class AppointmentCancelEndpoint(ISender sender) : Endpoint<CancelAppointm
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new CancelAppointmentCommand(id, req.Reason, null), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError)
+        {
+            foreach (var error in result.Errors) AddError(error.Description);
+            await SendErrorsAsync(cancellation: ct); return;
+        }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -61,7 +69,11 @@ public class AppointmentUpdateStatusEndpoint(ISender sender) : Endpoint<UpdateSt
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new UpdateAppointmentStatusCommand(id, req.Status), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError)
+        {
+            foreach (var error in result.Errors) AddError(error.Description);
+            await SendErrorsAsync(cancellation: ct); return;
+        }
         await SendOkAsync(result.Value, ct);
     }
 }

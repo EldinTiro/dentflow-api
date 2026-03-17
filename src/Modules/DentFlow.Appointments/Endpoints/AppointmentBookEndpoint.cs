@@ -26,7 +26,7 @@ public class AppointmentBookEndpoint(ISender sender) : Endpoint<BookAppointmentR
         if (result.IsError)
         {
             foreach (var error in result.Errors)
-                AddError(error.Code, error.Description);
+                AddError(error.Description);
             await SendErrorsAsync(cancellation: ct);
             return;
         }

@@ -15,5 +15,14 @@ public static class StaffErrors
 
     public static readonly Error CannotDeleteActive =
         Error.Conflict("Staff.CannotDeleteActive", "Cannot delete an active staff member. Deactivate first.");
+
+    public static readonly Error AvailabilityNotFound =
+        Error.NotFound("Staff.AvailabilityNotFound", "Staff availability slot was not found.");
+
+    public static readonly Error ConflictingAvailabilitySlot =
+        Error.Conflict("Staff.ConflictingAvailabilitySlot", "An availability slot already exists for this day that overlaps with the requested time range.");
+
+    public static readonly Error BlockedTimeNotFound =
+        Error.NotFound("Staff.BlockedTimeNotFound", "Staff blocked time was not found.");
 }
 

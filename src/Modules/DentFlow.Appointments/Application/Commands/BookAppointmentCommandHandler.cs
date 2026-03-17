@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Appointments.Application.Interfaces;
 using DentFlow.Appointments.Domain;
 
@@ -7,7 +8,8 @@ namespace DentFlow.Appointments.Application.Commands;
 
 public class BookAppointmentCommandHandler(
     IAppointmentRepository appointmentRepository,
-    IAppointmentTypeRepository appointmentTypeRepository)
+    IAppointmentTypeRepository appointmentTypeRepository,
+    IProviderBlockedTimeChecker blockedTimeChecker)
     : IRequestHandler<BookAppointmentCommand, ErrorOr<AppointmentResponse>>
 {
     public async Task<ErrorOr<AppointmentResponse>> Handle(
@@ -20,6 +22,11 @@ public class BookAppointmentCommandHandler(
         var appointmentType = await appointmentTypeRepository.GetByIdAsync(command.AppointmentTypeId, cancellationToken);
         if (appointmentType is null)
             return AppointmentErrors.AppointmentTypeNotFound;
+
+        var isBlocked = await blockedTimeChecker.IsProviderBlockedAsync(
+            command.ProviderId, command.StartAt, command.EndAt, cancellationToken);
+        if (isBlocked)
+            return AppointmentErrors.ProviderUnavailable;
 
         var hasConflict = await appointmentRepository.HasProviderConflictAsync(
             command.ProviderId, command.StartAt, command.EndAt, null, cancellationToken);

@@ -1,11 +1,14 @@
 ﻿using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Appointments.Application.Interfaces;
 using DentFlow.Appointments.Domain;
 
 namespace DentFlow.Appointments.Application.Commands;
 
-public class RescheduleAppointmentCommandHandler(IAppointmentRepository repo)
+public class RescheduleAppointmentCommandHandler(
+    IAppointmentRepository repo,
+    IProviderBlockedTimeChecker blockedTimeChecker)
     : IRequestHandler<RescheduleAppointmentCommand, ErrorOr<AppointmentResponse>>
 {
     public async Task<ErrorOr<AppointmentResponse>> Handle(
@@ -18,6 +21,11 @@ public class RescheduleAppointmentCommandHandler(IAppointmentRepository repo)
         var appointment = await repo.GetByIdAsync(command.Id, cancellationToken);
         if (appointment is null)
             return AppointmentErrors.NotFound;
+
+        var isBlocked = await blockedTimeChecker.IsProviderBlockedAsync(
+            appointment.ProviderId, command.NewStartAt, command.NewEndAt, cancellationToken);
+        if (isBlocked)
+            return AppointmentErrors.ProviderUnavailable;
 
         var hasConflict = await repo.HasProviderConflictAsync(
             appointment.ProviderId, command.NewStartAt, command.NewEndAt, command.Id, cancellationToken);

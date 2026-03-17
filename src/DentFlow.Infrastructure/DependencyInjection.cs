@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<ITreatmentPlanRepository, TreatmentPlanRepository>();
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+        services.AddScoped<IProviderBlockedTimeChecker, ProviderBlockedTimeChecker>();
         return services;
     }
 }

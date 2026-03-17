@@ -1,7 +1,7 @@
 ﻿# DentFlow — Feature Progress Tracker
 
 > Living document. Update as features ship.  
-> Last updated: 2026-03-17
+> Last updated: 2026-03-18
 
 **Legend:** ✅ Done · 🔄 Partial · 🔲 Not started · 🚫 Blocked
 
@@ -18,6 +18,16 @@
 7. [Treatments (Phase 3)](#7-treatments-phase-3)
 8. [Billing (Phase 4)](#8-billing-phase-4)
 9. [Notifications (Phase 2/4)](#9-notifications-phase-24)
+10. [Documents (Phase 3)](#10-documents-phase-3)
+11. [Reporting (Phase 4)](#11-reporting-phase-4)
+12. [Frontend Shell & UX](#12-frontend-shell--ux)
+13. [Testing](#13-testing)
+14. [DevOps & Production](#14-devops--production)
+15. [AI Assistant — DentAI](#15-ai-assistant--dentai-backlog)
+16. [Agent Tooling & Copilot Instructions](#16-agent-tooling--copilot-instructions)
+17. [Localization (i18n)](#17-localization-i18n)
+18. [User Preferences & Settings](#18-user-preferences--settings)
+19. [Feature Flags / Capability Flags](#19-feature-flags--capability-flags)
 10. [Documents (Phase 3)](#10-documents-phase-3)
 11. [Reporting (Phase 4)](#11-reporting-phase-4)
 12. [Frontend Shell & UX](#12-frontend-shell--ux)
@@ -118,8 +128,9 @@
 | 4.7 | Staff list page with search & filter | ✅ | |
 | 4.8 | Create staff drawer | ✅ | |
 | 4.9 | Edit staff drawer | ✅ | |
-| 4.10 | Staff detail / profile page | 🔲 | |
-| 4.11 | Availability schedule UI | 🔲 | |
+| 4.10 | Staff detail / profile page | ✅ | `StaffDetailPage` with tabs |
+| 4.11 | Availability weekly schedule UI | ✅ | `StaffAvailabilityTab` — per-day open/close times, day toggle |
+| 4.12 | Blocked time UI (leave / vacation) | ✅ | `StaffBlockedTimesTab` — create, delete, date-range picker |
 
 ---
 
@@ -166,8 +177,8 @@
 | 6.7 | Appointment types CRUD | ✅ | |
 | 6.8 | Default appointment type seeding per tenant | ✅ | 10 dental types seeded via `AppointmentTypeSeeder` |
 | 6.9 | GET `/appointment-types` endpoint | ✅ | |
-| 6.10 | Conflict detection (overlapping provider bookings) | 🔲 | |
-| 6.11 | Provider availability check before booking | 🔲 | |
+| 6.10 | Conflict detection (overlapping provider bookings) | ✅ | `HasProviderConflictAsync` in `BookAppointmentCommandHandler` + `RescheduleAppointmentCommandHandler` |
+| 6.11 | Blocked-time enforcement (leave / vacation) before booking | ✅ | `IProviderBlockedTimeChecker` cross-module service; checked in Book + Reschedule handlers |
 | 6.12 | Buffer time between appointments | 🔲 | |
 | 6.13 | Recurring appointments | 🔲 | |
 | 6.14 | Waiting list | 🔲 | |
@@ -309,7 +320,7 @@
 | 12.3 | React Router v7 lazy-loaded routes | ✅ | |
 | 12.4 | TanStack Query + Axios API client | ✅ | |
 | 12.5 | Login page with brand logo | ✅ | Logo `h-40` above card |
-| 12.6 | Toast / notification feedback (success, error) | 🔲 | No global toast system yet |
+| 12.6 | Toast / notification feedback (success, error) | ✅ | `sonner` installed; `<Toaster>` in `App.tsx`; all mutations use `toast.error(getApiErrorMessage(...))` |
 | 12.7 | Confirmation dialogs (delete actions) | 🔲 | Patient delete has modal; staff/appointments don't |
 | 12.8 | Empty states (no data illustrations) | 🔲 | Showing plain text fallbacks |
 | 12.9 | Responsive / mobile layout | 🔲 | Desktop-only currently |
@@ -332,7 +343,7 @@
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 13.1 | Patient command/query handler unit tests | 🔄 | File exists, coverage incomplete |
-| 13.2 | Appointment handler unit tests | 🔄 | File exists, coverage incomplete |
+| 13.2 | Appointment handler unit tests | 🔄 | Book + Cancel + Reschedule + ProviderBlocked covered; UpdateStatus missing |
 | 13.3 | Staff handler unit tests | 🔄 | File exists |
 | 13.4 | Identity handler unit tests | 🔲 | |
 | 13.5 | Tenant handler unit tests | 🔲 | |
@@ -368,16 +379,88 @@
 
 ## Next Up — Recommended Priority Order
 
-1. **Toast notifications** (12.6) — every action currently completes silently; users have no feedback
-2. **Confirmation dialogs** (12.7) — staff/appointment deletes fire immediately with no confirmation
-3. **Conflict detection on booking** (6.10) — overlapping appointments can be created right now
-4. **Manage appointment types admin UI** (6.27) — clinic can't customise types without hitting the DB
-5. **Staff detail / profile page** (4.10) — no drilldown from the staff list
-6. **Staff availability UI** (4.11) — schedule is stored but not editable in the UI
-7. **Provider availability engine** (4.5 / 6.11) — prerequisite for online booking portal
-8. **Notifications module** (9.1–9.9) — appointment reminders are a core clinic need
+1. **Confirmation dialogs** (12.7) — staff/appointment deletes fire immediately with no confirmation
+2. **Manage appointment types admin UI** (6.27) — clinic can't customise types without hitting the DB
+3. **Feature flags** (19.1–19.5) — prerequisite for safely enabling/disabling SMS, AI, online booking per tenant
+4. **User preferences & settings** (18.1–18.8) — language, theme, time format stored per user
+5. **Localization / i18n** (17.1–17.5) — English + Bosnian/Croatian/Serbian
+6. **Provider availability engine** (4.5) — query free slots; prerequisite for online booking portal
+7. **Notifications module** (9.1–9.9) — appointment reminders are a core clinic need
+8. **AI chatbot — DentAI** (15.1–15.13) — patient context Q&A
 9. **Billing module** (Phase 4) — invoices from completed treatment items, Stripe integration
 10. **Production infrastructure** (Phase 5) — Terraform, GitHub Actions CI/CD, security audit
+
+---
+
+## 16. Agent Tooling & Copilot Instructions
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 16.1 | Backend Copilot instructions (`dentflow-api/.github/copilot-instructions.md`) | ✅ | Architecture, CQRS, FastEndpoints error pattern, error handling, testing, DateTime, FluentValidation, migrations |
+| 16.2 | Module-scoped instructions (`src/Modules/.instructions.md`) | ✅ | Applies to all files under `src/Modules/**`; documents mandatory endpoint error propagation pattern |
+| 16.3 | Frontend Copilot instructions (`dentflow-web/.github/copilot-instructions.md`) | ✅ | Tech stack, error handling with `getApiErrorMessage` + sonner, Forms/Zod, query keys, naming, routing, TypeScript conventions |
+
+---
+
+## 17. Localization (i18n)
+
+> Support English (default) + Bosnian / Croatian / Serbian (Latin script, mutually intelligible — one translation file covers all three).
+
+### Frontend
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 17.1 | Install and configure `react-i18next` | 🔲 | |
+| 17.2 | Extract all UI strings into translation files (`en.json`, `bs.json`) | 🔲 | Bosnian file doubles as Croatian/Serbian Latin |
+| 17.3 | Language switcher in header / user settings | 🔲 | Persists to localStorage until user prefs are stored in DB |
+| 17.4 | Date/time and number formatting via `Intl` locale | 🔲 | |
+| 17.5 | RTL support scaffolding | 🔲 | Not needed now but architect for it |
+
+### Backend
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 17.6 | Error description localization | 🔲 | Low priority — messages are readable English for now; revisit if required by tenants |
+
+---
+
+## 18. User Preferences & Settings
+
+### Backend
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 18.1 | `UserPreferences` entity (per-user, per-tenant) | 🔲 | Stores language, theme, time format, default calendar view |
+| 18.2 | GET / PUT `/users/me/preferences` endpoint | 🔲 | |
+| 18.3 | Change password endpoint | 🔲 | Authenticated user changes own password |
+| 18.4 | Avatar upload (S3) | 🔲 | Blocked by Documents module |
+
+### Frontend
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 18.5 | User settings page (`/settings/profile`) | 🔲 | Name, avatar, change password |
+| 18.6 | Preferences panel — language, theme, time format (12h/24h), default calendar view | 🔲 | |
+| 18.7 | User profile dropdown in sidebar — avatar, name, role badge, settings link, logout | 🔲 | Currently logout is buried in sidebar footer |
+| 18.8 | Preferences synced to DB (not just localStorage) once backend is ready | 🔲 | |
+
+---
+
+## 19. Feature Flags / Capability Flags
+
+> Per-tenant toggles that let a SuperAdmin or ClinicAdmin enable/disable product features without a code deploy.
+
+### Backend
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 19.1 | `TenantFeatureFlag` entity (flagKey, isEnabled, tenantId) | 🔲 | `null` tenantId = platform-wide default |
+| 19.2 | `IFeatureFlagService` + `IsEnabled(flagKey)` implementation | 🔲 | Checks tenant override, falls back to platform default |
+| 19.3 | Seed default flags: `sms-reminders`, `ai-chatbot`, `online-booking`, `billing`, `treatment-plans` | 🔲 | |
+| 19.4 | GET / PUT `/admin/feature-flags` (SuperAdmin) and `/settings/feature-flags` (ClinicAdmin) endpoints | 🔲 | |
+| 19.5 | Guard handlers / endpoints with flag checks where relevant | 🔲 | E.g. SMS send blocked if `sms-reminders` off |
+
+### Frontend
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 19.6 | `useFeatureFlag(key)` hook — fetches tenant flags, returns boolean | 🔲 | Cache with TanStack Query |
+| 19.7 | Feature flag admin page (SuperAdmin — platform defaults; ClinicAdmin — tenant overrides) | 🔲 | Toggle switches per flag |
+| 19.8 | Conditionally hide nav items and UI sections based on flags | 🔲 | E.g. hide AI chat button if `ai-chatbot` off |
 
 ---
 
