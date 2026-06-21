@@ -13,7 +13,7 @@ public static class AppointmentStatus
     public static readonly IReadOnlyDictionary<string, string[]> AllowedTransitions =
         new Dictionary<string, string[]>
         {
-            [Scheduled]  = [CheckedIn, Cancelled, NoShow],
+            [Scheduled]  = [CheckedIn, InProgress, Cancelled, NoShow],
             [CheckedIn]  = [InProgress, Cancelled],
             [InProgress] = [Completed],
         };

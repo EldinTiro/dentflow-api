@@ -252,6 +252,34 @@ public class DeleteLineItemEndpoint(ISender sender) : EndpointWithoutRequest
     }
 }
 
+// ── POST /treatment-plans/{planId}/invoice ─────────────────────────────────
+
+public class CreateInvoiceFromPlanRequest
+{
+    public DateTime? DueDate { get; init; }
+    public string? Notes { get; init; }
+}
+
+public class CreateInvoiceFromTreatmentPlanEndpoint(ISender sender)
+    : Endpoint<CreateInvoiceFromPlanRequest, InvoiceResponse>
+{
+    public override void Configure()
+    {
+        Post("/treatment-plans/{planId}/invoice");
+        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff", "Receptionist");
+        Version(1);
+        Summary(s => s.Summary = "Create an invoice pre-populated from all items in a treatment plan");
+    }
+
+    public override async Task HandleAsync(CreateInvoiceFromPlanRequest req, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new CreateInvoiceFromTreatmentPlanCommand(Route<Guid>("planId"), req.DueDate, req.Notes), ct);
+        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        await SendCreatedAtAsync<InvoiceGetByIdEndpoint>(new { id = result.Value.Id }, result.Value, cancellation: ct);
+    }
+}
+
 // ── POST /invoices/{id}/payments ───────────────────────────────────────────
 
 public class RecordPaymentRequest

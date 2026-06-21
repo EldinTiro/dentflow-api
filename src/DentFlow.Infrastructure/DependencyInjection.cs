@@ -56,6 +56,8 @@ public static class DependencyInjection
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
         services.AddScoped<IProviderBlockedTimeChecker, ProviderBlockedTimeChecker>();
+        services.AddScoped<IProviderAvailabilityReader, ProviderAvailabilityReader>();
+        services.AddScoped<ITreatmentPlanReader, TreatmentPlanReader>();
         services.AddScoped<IDashboardService, DashboardService>();
         return services;
     }

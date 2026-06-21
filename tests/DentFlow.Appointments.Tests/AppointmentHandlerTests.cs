@@ -183,6 +183,48 @@ public class AppointmentStatusCommandHandlerTests
         result.Value.Status.Should().Be(AppointmentStatus.CheckedIn);
         await _repo.Received(1).UpdateAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task StartTreatment_FromScheduled_Succeeds()
+    {
+        // Arrange — Scheduled → InProgress should now be allowed (skipping CheckedIn)
+        var sut = new UpdateAppointmentStatusCommandHandler(_repo);
+        var appointment = Appointment.Create(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+            DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2));
+        _repo.GetByIdAsync(appointment.Id, Arg.Any<CancellationToken>()).Returns(appointment);
+
+        // Act
+        var result = await sut.Handle(
+            new UpdateAppointmentStatusCommand(appointment.Id, AppointmentStatus.InProgress),
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Value.Status.Should().Be(AppointmentStatus.InProgress);
+        await _repo.Received(1).UpdateAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task StartTreatment_FromCheckedIn_Succeeds()
+    {
+        // Arrange — CheckedIn → InProgress is the existing flow
+        var sut = new UpdateAppointmentStatusCommandHandler(_repo);
+        var appointment = Appointment.Create(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+            DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2));
+        appointment.CheckIn();
+        _repo.GetByIdAsync(appointment.Id, Arg.Any<CancellationToken>()).Returns(appointment);
+
+        // Act
+        var result = await sut.Handle(
+            new UpdateAppointmentStatusCommand(appointment.Id, AppointmentStatus.InProgress),
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Value.Status.Should().Be(AppointmentStatus.InProgress);
+    }
 }
 
 public class GetAppointmentByIdQueryHandlerTests
