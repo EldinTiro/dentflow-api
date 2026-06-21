@@ -1,8 +1,8 @@
-# Caddyfile — produkcija iza Cloudflare
+﻿# Caddyfile — produkcija iza Cloudflare
 # SSL terminira Cloudflare (orange cloud), Caddy handleuje HTTP routing na portu 80.
 #
 # Dodavanje nove klinike:
-#   1. Dodaj novi A record u Cloudflare: {slug}.dentflow.com → VPS_IP (orange cloud ON)
+#   1. Dodaj novi A record u Cloudflare: {slug}.mydentflow.com → VPS_IP (orange cloud ON)
 #   2. Nema promjena u ovom fajlu — wildcard :80 blok pokriva sve subdomene.
 #   3. Tenant se automatski registruje kroz SuperAdmin panel.
 

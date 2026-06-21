@@ -196,7 +196,7 @@ Two-layer model: coarse Roles + fine-grained Permission overrides per user.
 
 ## Multi-Tenancy
 
-- **Finbuckle.MultiTenant** v9 with subdomain resolution: `{slug}.DentFlow.com`
+- **Finbuckle.MultiTenant** v9 with subdomain resolution: `{slug}.mydentflow.com`
 - `TenantId` automatically applied to all `TenantAuditableEntity` rows on save
 - **Global Query Filters** in `ApplicationDbContext` automatically scope all queries to the current tenant
 - **Never** add `WHERE tenant_id = ...` manually � the filter handles it

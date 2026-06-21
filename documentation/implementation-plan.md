@@ -25,7 +25,7 @@
 
 ## Overview
 
-DentFlow is a multi-tenant, cloud-hosted dental practice management application. Each dental clinic is a tenant that gets its own subdomain (e.g. `clinicname.DentFlow.com`). All tenants share a single PostgreSQL database, isolated at the row level via `tenant_id` on every table.
+DentFlow is a multi-tenant, cloud-hosted dental practice management application. Each dental clinic is a tenant that gets its own subdomain (e.g. `clinicname.mydentflow.com`). All tenants share a single PostgreSQL database, isolated at the row level via `tenant_id` on every table.
 
 **Core characteristics:**
 - Multi-tenant SaaS (row-level isolation, subdomain-based resolution)
@@ -175,7 +175,7 @@ DentFlow/
 4. **Soft deletes** — All tenant-scoped entities implement a `ISoftDeletable` interface (`IsDeleted`, `DeletedAt`). The Global Query Filter also appends `WHERE is_deleted = false`, ensuring soft-deleted records are invisible to all queries by default. Hard deletes are never performed on clinical or financial data.
 5. Tenant creation triggers a Hangfire seeding job (default roles, settings, admin user).
 
-**Subdomain pattern:** `{clinic-slug}.DentFlow.com`
+**Subdomain pattern:** `{clinic-slug}.mydentflow.com`
 
 ### Soft Delete Interface
 
@@ -559,7 +559,7 @@ Structured clinical note-taking linked to appointments and treatment items.
 
 ### F4 — Online Booking Portal
 A public-facing booking page allowing patients to self-schedule appointments.
-- Accessible via `{clinic-slug}.DentFlow.com/book` — no login required to browse availability
+- Accessible via `{clinic-slug}.mydentflow.com/book` — no login required to browse availability
 - Patients select service type, preferred dentist, and available time slot
 - Booking confirmation sent via email and SMS
 - Configurable booking rules per tenant (lead time, cancellation window, max future bookings)
@@ -585,7 +585,7 @@ Allows dentists to export a treatment plan as a branded PDF for the patient to r
 
 ### F7 — Patient Portal
 A read-only self-service portal for patients to view their own records.
-- Accessible at `{clinic-slug}.DentFlow.com/portal` — separate login with `Patient` role
+- Accessible at `{clinic-slug}.mydentflow.com/portal` — separate login with `Patient` role
 - View upcoming and past appointments
 - Download invoices and receipts
 - View and sign treatment plans (integrates with F6)

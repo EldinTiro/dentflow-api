@@ -15,7 +15,7 @@ Always apply every rule in this file. Never deviate without an explicit user ins
 | Error handling | ErrorOr (`ErrorOr<T>` on all handler return types) |
 | ORM | EF Core 8 + Npgsql (PostgreSQL) |
 | Auth | ASP.NET Core Identity + JWT Bearer (HMAC-SHA256 dev, RS256 prod) |
-| Multi-tenancy | Finbuckle.MultiTenant — subdomain strategy (`{slug}.DentFlow.com`) |
+| Multi-tenancy | Finbuckle.MultiTenant — subdomain strategy (`{slug}.mydentflow.com`) |
 | Logging | Serilog |
 | Caching | Redis (optional, configured via `Redis:ConnectionString`) |
 | Testing | xUnit + FluentAssertions + NSubstitute |
@@ -363,7 +363,7 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
 - **Never** manually filter queries by `TenantId`. The EF Core global query filter on `ApplicationDbContext` handles tenant isolation automatically for all `TenantAuditableEntity` types.
 - **Never** manually filter out soft-deleted records. The global filter handles `IsDeleted == false` automatically.
 - When creating a new entity that requires a tenant, call `entity.SetTenant(tenantId)` where `tenantId` comes from `IMultiTenantContextAccessor`.
-- The tenant is resolved from the subdomain (`{slug}.DentFlow.com`) by Finbuckle before any request hits a handler.
+- The tenant is resolved from the subdomain (`{slug}.mydentflow.com`) by Finbuckle before any request hits a handler.
 
 ---
 

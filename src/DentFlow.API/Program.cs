@@ -32,7 +32,7 @@ builder.Services.AddApplication(
 );
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Multi-tenancy — subdomain strategy: {slug}.DentFlow.com
+// Multi-tenancy — subdomain strategy: {slug}.mydentflow.com
 builder.Services
     .AddMultiTenant<TenantInfo>()
     .WithHostStrategy("__tenant__.*")
