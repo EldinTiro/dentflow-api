@@ -19,9 +19,11 @@ public class CreatePatientCommandHandlerTests
     }
 
     private static CreatePatientCommand BuildCommand(string? email = null) => new(
+        PatientNumber: null,
         FirstName: "Jane",
         LastName: "Doe",
         PreferredName: null,
+        ParentName: null,
         DateOfBirth: new DateOnly(1990, 5, 15),
         Gender: Domain.Gender.Female,
         Email: email,

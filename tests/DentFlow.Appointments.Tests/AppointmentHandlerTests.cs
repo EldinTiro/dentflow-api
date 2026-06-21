@@ -2,6 +2,7 @@
 using NSubstitute;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Commands;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Appointments.Application.Interfaces;
 using DentFlow.Appointments.Application.Queries;
 using DentFlow.Appointments.Domain;
@@ -12,11 +13,12 @@ public class BookAppointmentCommandHandlerTests
 {
     private readonly IAppointmentRepository _repo = Substitute.For<IAppointmentRepository>();
     private readonly IAppointmentTypeRepository _typeRepo = Substitute.For<IAppointmentTypeRepository>();
+    private readonly IProviderBlockedTimeChecker _blockedTimeChecker = Substitute.For<IProviderBlockedTimeChecker>();
     private readonly BookAppointmentCommandHandler _sut;
 
     public BookAppointmentCommandHandlerTests()
     {
-        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo);
+        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo, _blockedTimeChecker);
     }
 
     private static BookAppointmentCommand ValidCommand(DateTime? startAt = null, DateTime? endAt = null)
@@ -44,6 +46,9 @@ public class BookAppointmentCommandHandlerTests
         var appointmentType = AppointmentType.Create("Checkup", 60);
         _typeRepo.GetByIdAsync(command.AppointmentTypeId, Arg.Any<CancellationToken>())
                  .Returns(appointmentType);
+        _blockedTimeChecker.IsProviderBlockedAsync(
+            command.ProviderId, command.StartAt, command.EndAt, Arg.Any<CancellationToken>())
+            .Returns(false);
         _repo.HasProviderConflictAsync(
             command.ProviderId, command.StartAt, command.EndAt,
             null, Arg.Any<CancellationToken>()).Returns(false);
@@ -100,6 +105,9 @@ public class BookAppointmentCommandHandlerTests
         var appointmentType = AppointmentType.Create("Checkup", 60);
         _typeRepo.GetByIdAsync(command.AppointmentTypeId, Arg.Any<CancellationToken>())
                  .Returns(appointmentType);
+        _blockedTimeChecker.IsProviderBlockedAsync(
+            command.ProviderId, command.StartAt, command.EndAt, Arg.Any<CancellationToken>())
+            .Returns(false);
         _repo.HasProviderConflictAsync(
             command.ProviderId, command.StartAt, command.EndAt,
             null, Arg.Any<CancellationToken>()).Returns(true);
@@ -135,7 +143,7 @@ public class AppointmentStatusCommandHandlerTests
 
         // Assert
         result.IsError.Should().BeTrue();
-        result.FirstError.Code.Should().Be("Appointment.CannotCancelCompleted");
+        result.FirstError.Code.Should().Be("Appointment.AlreadyTerminal");
     }
 
     [Fact]
@@ -167,12 +175,12 @@ public class AppointmentStatusCommandHandlerTests
 
         // Act
         var result = await sut.Handle(
-            new UpdateAppointmentStatusCommand(appointment.Id, AppointmentStatus.Confirmed),
+            new UpdateAppointmentStatusCommand(appointment.Id, AppointmentStatus.CheckedIn),
             CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeFalse();
-        result.Value.Status.Should().Be(AppointmentStatus.Confirmed);
+        result.Value.Status.Should().Be(AppointmentStatus.CheckedIn);
         await _repo.Received(1).UpdateAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
     }
 }
