@@ -1,6 +1,8 @@
 using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common;
 using DentFlow.Application.Common.Interfaces;
+using DentFlow.Domain.Features;
 using DentFlow.Patients.Application.Interfaces;
 using DentFlow.Patients.Domain;
 
@@ -9,13 +11,17 @@ namespace DentFlow.Patients.Application.Commands;
 public class UploadPatientDocumentCommandHandler(
     IPatientRepository patientRepository,
     IPatientDocumentRepository documentRepository,
-    IStorageService storageService)
+    IStorageService storageService,
+    IFeatureService featureService)
     : IRequestHandler<UploadPatientDocumentCommand, ErrorOr<PatientDocumentResponse>>
 {
     public async Task<ErrorOr<PatientDocumentResponse>> Handle(
         UploadPatientDocumentCommand command,
         CancellationToken cancellationToken)
     {
+        if (!featureService.IsEnabled(FeatureFlag.DocumentStorage))
+            return FeatureErrors.NotAvailableOnCurrentPlan;
+
         var patient = await patientRepository.GetByIdAsync(command.PatientId, cancellationToken);
         if (patient is null)
             return PatientErrors.NotFound;

@@ -46,7 +46,13 @@ public class PatientDocumentUploadEndpoint(ISender sender)
             userId);
 
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError)
+        {
+            foreach (var e in result.Errors)
+                AddError(e.Description);
+            await SendErrorsAsync(cancellation: ct);
+            return;
+        }
         await SendCreatedAtAsync<PatientDocumentListEndpoint>(
             new { patientId }, result.Value, cancellation: ct);
     }
