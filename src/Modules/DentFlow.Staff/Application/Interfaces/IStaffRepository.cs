@@ -11,6 +11,7 @@ public interface IStaffRepository
         bool? isActive,
         int page,
         int pageSize,
+        string? searchTerm = null,
         CancellationToken cancellationToken = default);
     Task AddAsync(StaffMember staffMember, CancellationToken cancellationToken = default);
     Task UpdateAsync(StaffMember staffMember, CancellationToken cancellationToken = default);

@@ -18,6 +18,7 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
 
     public override async Task HandleAsync(CancellationToken ct)
     {
+        var searchTerm = Query<string?>("searchTerm", isRequired: false);
         var staffTypeStr = Query<string?>("staffType", isRequired: false);
         var isActive = Query<bool?>("isActive", isRequired: false);
         var pageStr = Query<string?>("page", isRequired: false);
@@ -29,7 +30,7 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
             ? parsed
             : null;
 
-        var result = await sender.Send(new ListStaffMembersQuery(staffType, isActive, page, pageSize), ct);
+        var result = await sender.Send(new ListStaffMembersQuery(staffType, isActive, page, pageSize, searchTerm), ct);
 
         if (result.IsError)
         {

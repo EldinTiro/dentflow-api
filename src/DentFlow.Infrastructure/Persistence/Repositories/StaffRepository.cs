@@ -17,9 +17,17 @@ public class StaffRepository(ApplicationDbContext dbContext) : IStaffRepository
     }
 
     public async Task<(IReadOnlyList<StaffMember> Items, int Total)> ListAsync(
-        StaffType? staffType, bool? isActive, int page, int pageSize, CancellationToken cancellationToken = default)
+        StaffType? staffType, bool? isActive, int page, int pageSize, string? searchTerm = null, CancellationToken cancellationToken = default)
     {
         var query = dbContext.Set<StaffMember>().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            query = query.Where(s =>
+                s.FirstName.ToLower().Contains(term) ||
+                s.LastName.ToLower().Contains(term) ||
+                (s.Email != null && s.Email.ToLower().Contains(term)));
+        }
         if (staffType.HasValue) query = query.Where(s => s.StaffType == staffType.Value);
         if (isActive.HasValue) query = query.Where(s => s.IsActive == isActive.Value);
 

@@ -16,6 +16,7 @@ public class ListStaffMembersQueryHandler(IStaffRepository staffRepository)
             query.IsActive,
             query.Page,
             query.PageSize,
+            query.SearchTerm,
             cancellationToken);
 
         var responses = items.Select(StaffMemberResponse.FromEntity).ToList();
