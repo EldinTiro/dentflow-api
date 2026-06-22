@@ -24,7 +24,13 @@ public class TenantCreateEndpoint(ISender sender) : Endpoint<CreateTenantRequest
             req.LogoBase64);
 
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError)
+        {
+            foreach (var e in result.Errors)
+                AddError(e.Code, e.Description);
+            await SendErrorsAsync(cancellation: ct);
+            return;
+        }
 
         await SendCreatedAtAsync<TenantGetByIdEndpoint>(
             new { id = result.Value.Id }, result.Value, cancellation: ct);
