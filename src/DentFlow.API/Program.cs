@@ -114,13 +114,9 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-// Seed roles + SuperAdmin user on startup
+// Seed SuperAdmin user + default appointment types on startup
 await SuperAdminSeeder.SeedAsync(app.Services);
 await AppointmentTypeSeeder.SeedAsync(app.Services);
-await PatientSeeder.SeedAsync(app.Services);
-await StaffSeeder.SeedAsync(app.Services);
-await AppointmentSeeder.SeedAsync(app.Services);
-await InvoiceSeeder.SeedAsync(app.Services);
 
 // Health check — before any auth middleware
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
