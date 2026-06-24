@@ -78,6 +78,10 @@ public class ApplicationDbContext(
             e.Property(t => t.Plan).HasMaxLength(50);
             e.Property(t => t.StripeCustomerId).HasMaxLength(255);
             e.Property(t => t.StripeSubscriptionId).HasMaxLength(255);
+            e.Property(t => t.WorkdayStart).HasColumnName("WorkdayStart").HasColumnType("time").HasDefaultValue(new TimeOnly(8, 0));
+            e.Property(t => t.WorkdayEnd).HasColumnName("WorkdayEnd").HasColumnType("time").HasDefaultValue(new TimeOnly(22, 30));
+            e.Property(t => t.SlotDurationMinutes).HasColumnName("SlotDurationMinutes").HasDefaultValue(30);
+            e.Property(t => t.WeeklyScheduleJson).HasColumnName("WeeklyScheduleJson").HasColumnType("text");
         });
 
         // RefreshToken

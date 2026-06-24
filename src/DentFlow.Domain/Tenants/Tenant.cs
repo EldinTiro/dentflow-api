@@ -43,6 +43,29 @@ public class Tenant
         PlanExpiresAt = expiresAt;
     }
 
+    // ── Working hours ───────────────────────────────────────────────────────
+    public TimeOnly WorkdayStart { get; private set; } = new(8, 0);
+    public TimeOnly WorkdayEnd { get; private set; } = new(22, 30);
+    public int SlotDurationMinutes { get; private set; } = 30;
+
+    /// <summary>
+    /// JSON-serialised per-day schedule. Null means "use global WorkdayStart/End for all open days."
+    /// </summary>
+    public string? WeeklyScheduleJson { get; private set; }
+
     public void SetLogo(string? logoBase64) => LogoBase64 = logoBase64;
+
+    public void UpdateWorkingHours(TimeOnly start, TimeOnly end, int slotDurationMinutes)
+    {
+        WorkdayStart = start;
+        WorkdayEnd = end;
+        SlotDurationMinutes = slotDurationMinutes;
+    }
+
+    public void UpdateWeeklySchedule(string scheduleJson, int slotDurationMinutes)
+    {
+        WeeklyScheduleJson = scheduleJson;
+        SlotDurationMinutes = slotDurationMinutes;
+    }
 }
 
