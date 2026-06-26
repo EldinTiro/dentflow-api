@@ -2,23 +2,28 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using DentFlow.Application.Common.Interfaces;
 using DentFlow.Appointments.Application.Interfaces;
 using DentFlow.Domain.Identity;
 using DentFlow.Infrastructure.Persistence;
 using DentFlow.Infrastructure.Persistence.Repositories;
 using DentFlow.Infrastructure.Services;
+using DentFlow.Notifications.Application.Interfaces;
 using DentFlow.Patients.Application.Interfaces;
 using DentFlow.Staff.Application.Interfaces;
 using DentFlow.Tenants.Application.Interfaces;
 using DentFlow.Billing.Application.Interfaces;
 using DentFlow.Treatments.Application.Interfaces;
+
 namespace DentFlow.Infrastructure;
+
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(
@@ -59,7 +64,25 @@ public static class DependencyInjection
         services.AddScoped<IProviderAvailabilityReader, ProviderAvailabilityReader>();
         services.AddScoped<ITreatmentPlanReader, TreatmentPlanReader>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddHttpContextAccessor();
         services.AddScoped<IFeatureService, TierFeatureService>();
+
+        // Notifications
+        services.Configure<TwilioSettings>(configuration.GetSection("Twilio"));
+        services.Configure<NotificationSettings>(configuration.GetSection("Notifications"));
+
+        var notificationSettings = configuration.GetSection("Notifications").Get<NotificationSettings>();
+        if (environment.IsDevelopment() || (notificationSettings?.UseFakeChannel ?? false))
+            services.AddScoped<INotificationChannel, FakeSmsChannel>();
+        else
+            services.AddScoped<INotificationChannel, SmsChannel>();
+
+        services.AddScoped<INotificationLogRepository, NotificationLogRepository>();
+        services.AddScoped<ITenantNotificationConfigRepository, TenantNotificationConfigRepository>();
+
+        // Hangfire jobs
+        services.AddScoped<AppointmentReminderJob>();
+
         return services;
     }
 }

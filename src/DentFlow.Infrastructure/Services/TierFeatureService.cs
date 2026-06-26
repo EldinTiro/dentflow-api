@@ -2,6 +2,7 @@ using DentFlow.Application.Common.Interfaces;
 using DentFlow.Domain.Features;
 using DentFlow.Infrastructure.Persistence;
 using Finbuckle.MultiTenant.Abstractions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace DentFlow.Infrastructure.Services;
@@ -9,10 +10,12 @@ namespace DentFlow.Infrastructure.Services;
 /// <summary>
 /// Derives the active feature set from the tenant's subscription plan.
 /// Plan is loaded once per request (scoped lifetime) and cached in a private field.
+/// Resolves tenant via JWT 'tid' claim first, then Finbuckle identifier as fallback.
 /// </summary>
 internal sealed class TierFeatureService(
     ApplicationDbContext db,
-    IMultiTenantContextAccessor multiTenantContextAccessor) : IFeatureService
+    IMultiTenantContextAccessor multiTenantContextAccessor,
+    IHttpContextAccessor httpContextAccessor) : IFeatureService
 {
     private static readonly HashSet<FeatureFlag> ProFlags =
     [
@@ -55,11 +58,26 @@ internal sealed class TierFeatureService(
         if (_cachedPlan is not null)
             return _cachedPlan;
 
-        var identifier = multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Identifier;
-        if (Guid.TryParse(identifier, out var tenantId))
+        // Prefer the JWT 'tid' claim — set by the Identity module at login and
+        // always present in authenticated requests regardless of dev/prod Finbuckle config.
+        var tidClaim = httpContextAccessor.HttpContext?.User.FindFirst("tid")?.Value;
+        if (Guid.TryParse(tidClaim, out var tenantIdFromClaim))
         {
             var plan = await db.Tenants
-                .Where(t => t.Id == tenantId)
+                .Where(t => t.Id == tenantIdFromClaim)
+                .Select(t => t.Plan)
+                .FirstOrDefaultAsync();
+
+            _cachedPlan = plan ?? "Free";
+            return _cachedPlan;
+        }
+
+        // Fallback: Finbuckle identifier (works when identifier is a Guid in production).
+        var identifier = multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Identifier;
+        if (Guid.TryParse(identifier, out var tenantIdFromFinbuckle))
+        {
+            var plan = await db.Tenants
+                .Where(t => t.Id == tenantIdFromFinbuckle)
                 .Select(t => t.Plan)
                 .FirstOrDefaultAsync();
 
@@ -73,8 +91,6 @@ internal sealed class TierFeatureService(
         return _cachedPlan;
     }
 
-    // Synchronous convenience — used for in-handler checks that run after any async setup.
-    // Callers that need to guard at handler entry should await ResolveplanAsync() first.
     private string ResolvePlanSync() =>
         _cachedPlan ?? ResolveplanAsync().AsTask().GetAwaiter().GetResult();
 

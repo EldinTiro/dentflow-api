@@ -1,12 +1,16 @@
 ﻿using DentFlow.Identity;
 using DentFlow.Tenants;
 using DentFlow.Billing;
+using DentFlow.Notifications;
 using FastEndpoints;
 using FastEndpoints.Security;
 using FastEndpoints.Swagger;
 using Finbuckle.MultiTenant;
 using DentFlow.Application;
 using DentFlow.Infrastructure;
+using DentFlow.Infrastructure.Services;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -28,9 +32,20 @@ builder.Services.AddApplication(
     typeof(DentFlow.Appointments.Application.AppointmentResponse).Assembly,
     typeof(DentFlow.Tenants.Application.Commands.CreateTenantCommand).Assembly,
     typeof(DentFlow.Treatments.Application.TreatmentPlanResponse).Assembly,
-    typeof(DentFlow.Billing.Application.InvoiceResponse).Assembly
+    typeof(DentFlow.Billing.Application.InvoiceResponse).Assembly,
+    typeof(DentFlow.Notifications.Application.NotificationConfigResponse).Assembly
 );
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddNotificationsModule();
+
+// Hangfire
+var hangfireConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddHangfire(cfg => cfg
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(hangfireConnection)));
+builder.Services.AddHangfireServer();
 
 // Multi-tenancy — subdomain strategy: {slug}.mydentflow.com
 builder.Services
@@ -54,6 +69,7 @@ builder.Services
             typeof(DentFlow.Treatments.Endpoints.TreatmentPlanCreateEndpoint).Assembly,
             typeof(DentFlow.Billing.Endpoints.InvoiceCreateEndpoint).Assembly,
             typeof(DentFlow.Reporting.Endpoints.DashboardStatsEndpoint).Assembly,
+            typeof(DentFlow.Notifications.Endpoints.NotificationConfigGetEndpoint).Assembly,
         ];
     })
     .AddAuthenticationJwtBearer(o => o.SigningKey = jwtSigningKey)
@@ -121,6 +137,18 @@ await AppointmentTypeSeeder.SeedAsync(app.Services);
 // Health check — before any auth middleware
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
    .AllowAnonymous();
+
+// Hangfire dashboard (restrict to SuperAdmin in production)
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter()]
+});
+
+// Register recurring jobs
+RecurringJob.AddOrUpdate<AppointmentReminderJob>(
+    "appointment-reminders",
+    job => job.RunAsync(CancellationToken.None),
+    "*/15 * * * *");
 
 app.UseSerilogRequestLogging();
 app.UseCors();

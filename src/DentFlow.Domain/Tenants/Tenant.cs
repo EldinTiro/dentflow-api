@@ -55,6 +55,10 @@ public class Tenant
 
     public void SetLogo(string? logoBase64) => LogoBase64 = logoBase64;
 
+    public string TimeZoneId { get; private set; } = "UTC";
+
+    public void SetTimeZone(string ianaTimeZoneId) => TimeZoneId = ianaTimeZoneId;
+
     public void UpdateWorkingHours(TimeOnly start, TimeOnly end, int slotDurationMinutes)
     {
         WorkdayStart = start;

@@ -6,6 +6,7 @@ using DentFlow.Appointments.Domain;
 using DentFlow.Domain.Common;
 using DentFlow.Domain.Identity;
 using DentFlow.Domain.Tenants;
+using DentFlow.Notifications.Domain;
 using DentFlow.Patients.Domain;
 using DentFlow.Staff.Domain;
 using DentFlow.Treatments.Domain;
@@ -49,6 +50,10 @@ public class ApplicationDbContext(
     public DbSet<InvoiceLineItem> InvoiceLineItems => Set<InvoiceLineItem>();
     public DbSet<InvoicePayment> InvoicePayments => Set<InvoicePayment>();
 
+    // Notifications
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+    public DbSet<TenantNotificationConfig> TenantNotificationConfigs => Set<TenantNotificationConfig>();
+
     private Guid? CurrentTenantId =>
         Guid.TryParse(multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Identifier, out var id)
             ? id
@@ -82,6 +87,7 @@ public class ApplicationDbContext(
             e.Property(t => t.WorkdayEnd).HasColumnName("WorkdayEnd").HasColumnType("time").HasDefaultValue(new TimeOnly(22, 30));
             e.Property(t => t.SlotDurationMinutes).HasColumnName("SlotDurationMinutes").HasDefaultValue(30);
             e.Property(t => t.WeeklyScheduleJson).HasColumnName("WeeklyScheduleJson").HasColumnType("text");
+            e.Property(t => t.TimeZoneId).HasMaxLength(100).HasDefaultValue("UTC");
         });
 
         // RefreshToken
@@ -135,10 +141,7 @@ public class ApplicationDbContext(
         {
             if (entry.State == EntityState.Added)
             {
-                if (tenantId.HasValue)
-                    entry.Entity.SetTenant(tenantId.Value);
-
-                // CreatedAt is set in the entity constructor
+                entry.Entity.SetTenant(tenantId ?? Guid.Empty);
             }
 
             if (entry.State == EntityState.Modified)
