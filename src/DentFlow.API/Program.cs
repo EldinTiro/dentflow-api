@@ -38,14 +38,17 @@ builder.Services.AddApplication(
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddNotificationsModule();
 
-// Hangfire
-var hangfireConnection = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddHangfire(cfg => cfg
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(hangfireConnection)));
-builder.Services.AddHangfireServer();
+// Hangfire — skip in Testing environment (Testcontainers don't expose a pg port to Hangfire)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    var hangfireConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Services.AddHangfire(cfg => cfg
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(hangfireConnection)));
+    builder.Services.AddHangfireServer();
+}
 
 // Multi-tenancy — subdomain strategy: {slug}.mydentflow.com
 builder.Services
@@ -138,17 +141,19 @@ await AppointmentTypeSeeder.SeedAsync(app.Services);
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
    .AllowAnonymous();
 
-// Hangfire dashboard (restrict to SuperAdmin in production)
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+// Hangfire dashboard + recurring jobs — skip in Testing environment
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    Authorization = [new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter()]
-});
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter()]
+    });
 
-// Register recurring jobs
-RecurringJob.AddOrUpdate<AppointmentReminderJob>(
-    "appointment-reminders",
-    job => job.RunAsync(CancellationToken.None),
-    "*/15 * * * *");
+    RecurringJob.AddOrUpdate<AppointmentReminderJob>(
+        "appointment-reminders",
+        job => job.RunAsync(CancellationToken.None),
+        "*/15 * * * *");
+}
 
 app.UseSerilogRequestLogging();
 app.UseCors();
