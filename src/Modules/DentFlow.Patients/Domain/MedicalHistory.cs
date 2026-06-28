@@ -41,7 +41,12 @@ public class MedicalHistory : TenantAuditableEntity
         string? generalNotes,
         string? currentMedications,
         string? physicianName,
-        string? physicianPhone)
+        string? physicianPhone,
+        bool hasBleedingDisorder = false,
+        bool isOnBloodThinners = false,
+        bool hasPacemaker = false,
+        bool hasArtificialJoints = false,
+        bool hasLatexAllergy = false)
     {
         return new MedicalHistory
         {
@@ -55,6 +60,11 @@ public class MedicalHistory : TenantAuditableEntity
             IsDiabetic = isDiabetic,
             HasHeartCondition = hasHeartCondition,
             HasHypertension = hasHypertension,
+            HasBleedingDisorder = hasBleedingDisorder,
+            IsOnBloodThinners = isOnBloodThinners,
+            HasPacemaker = hasPacemaker,
+            HasArtificialJoints = hasArtificialJoints,
+            HasLatexAllergy = hasLatexAllergy,
             GeneralNotes = generalNotes,
             CurrentMedications = currentMedications,
             PhysicianName = physicianName,

@@ -19,7 +19,16 @@ public class PatientGetByIdEndpoint(ISender sender) : EndpointWithoutRequest<Pat
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new GetPatientByIdQuery(id), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError)
+        {
+            if (result.FirstError.Type == ErrorOr.ErrorType.NotFound)
+            {
+                await SendNotFoundAsync(ct);
+                return;
+            }
+            await SendErrorsAsync(cancellation: ct);
+            return;
+        }
         await SendOkAsync(result.Value, ct);
     }
 }

@@ -20,6 +20,7 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
     {
         var search = Query<string?>("search", isRequired: false);
         var statusStr = Query<string?>("status", isRequired: false);
+        var recallFilter = Query<string?>("recallFilter", isRequired: false);
         var pageStr = Query<string?>("page", isRequired: false);
         var pageSizeStr = Query<string?>("pageSize", isRequired: false);
         var page = int.TryParse(pageStr, out var p) ? p : 1;
@@ -29,7 +30,7 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
             ? parsed
             : null;
 
-        var result = await sender.Send(new ListPatientsQuery(search, status, page, pageSize), ct);
+        var result = await sender.Send(new ListPatientsQuery(search, status, recallFilter, page, pageSize), ct);
         if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
         await SendOkAsync(result.Value, ct);
     }

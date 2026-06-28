@@ -21,7 +21,7 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
             .FirstOrDefaultAsync(p => p.PatientNumber == patientNumber, cancellationToken);
 
     public async Task<(IReadOnlyList<Patient> Items, int Total)> ListAsync(
-        string? searchTerm, PatientStatus? status, int page, int pageSize, CancellationToken cancellationToken = default)
+        string? searchTerm, PatientStatus? status, string? recallFilter, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = dbContext.Set<Patient>().AsQueryable();
 
@@ -36,6 +36,18 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
         }
 
         if (status.HasValue) query = query.Where(p => p.Status == status.Value);
+
+        if (!string.IsNullOrWhiteSpace(recallFilter))
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var thirtyDaysLater = today.AddDays(30);
+            query = recallFilter switch
+            {
+                "overdue"  => query.Where(p => p.RecallDueDate != null && p.RecallDueDate < today),
+                "due-soon" => query.Where(p => p.RecallDueDate != null && p.RecallDueDate >= today && p.RecallDueDate <= thirtyDaysLater),
+                _          => query,
+            };
+        }
 
         var total = await query.CountAsync(cancellationToken);
         var items = await query.OrderBy(p => p.LastName).ThenBy(p => p.FirstName)
@@ -67,6 +79,70 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
         patient.SoftDelete();
         dbContext.Set<Patient>().Update(patient);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PatientEmergencyContact>> ListEmergencyContactsAsync(Guid patientId, CancellationToken ct = default) =>
+        await dbContext.PatientEmergencyContacts
+            .Where(c => c.PatientId == patientId)
+            .OrderByDescending(c => c.IsPrimary).ThenBy(c => c.Name)
+            .ToListAsync(ct);
+
+    public async Task<PatientEmergencyContact> AddEmergencyContactAsync(PatientEmergencyContact contact, CancellationToken ct = default)
+    {
+        dbContext.PatientEmergencyContacts.Add(contact);
+        await dbContext.SaveChangesAsync(ct);
+        return contact;
+    }
+
+    public async Task<PatientEmergencyContact?> GetEmergencyContactAsync(Guid patientId, Guid contactId, CancellationToken ct = default) =>
+        await dbContext.PatientEmergencyContacts
+            .FirstOrDefaultAsync(c => c.Id == contactId && c.PatientId == patientId, ct);
+
+    public async Task DeleteEmergencyContactAsync(PatientEmergencyContact contact, CancellationToken ct = default)
+    {
+        dbContext.PatientEmergencyContacts.Remove(contact);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Allergy>> ListAllergiesAsync(Guid patientId, CancellationToken ct = default) =>
+        await dbContext.Allergies
+            .Where(a => a.PatientId == patientId)
+            .OrderBy(a => a.Allergen)
+            .ToListAsync(ct);
+
+    public async Task<Allergy> AddAllergyAsync(Allergy allergy, CancellationToken ct = default)
+    {
+        dbContext.Allergies.Add(allergy);
+        await dbContext.SaveChangesAsync(ct);
+        return allergy;
+    }
+
+    public async Task<Allergy?> GetAllergyAsync(Guid patientId, Guid allergyId, CancellationToken ct = default) =>
+        await dbContext.Allergies
+            .FirstOrDefaultAsync(a => a.Id == allergyId && a.PatientId == patientId, ct);
+
+    public async Task DeleteAllergyAsync(Allergy allergy, CancellationToken ct = default)
+    {
+        dbContext.Allergies.Remove(allergy);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<MedicalHistory?> GetCurrentMedicalHistoryAsync(Guid patientId, CancellationToken ct = default) =>
+        await dbContext.MedicalHistories
+            .Where(m => m.PatientId == patientId && m.IsCurrent)
+            .OrderByDescending(m => m.RecordedAt)
+            .FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyList<MedicalHistory>> GetCurrentMedicalHistoriesAsync(Guid patientId, CancellationToken ct = default) =>
+        await dbContext.MedicalHistories
+            .Where(m => m.PatientId == patientId && m.IsCurrent)
+            .ToListAsync(ct);
+
+    public async Task<MedicalHistory> AddMedicalHistoryAsync(MedicalHistory record, CancellationToken ct = default)
+    {
+        dbContext.MedicalHistories.Add(record);
+        await dbContext.SaveChangesAsync(ct);
+        return record;
     }
 }
 

@@ -14,6 +14,7 @@ public class ListPatientsQueryHandler(IPatientRepository patientRepository)
         var (items, total) = await patientRepository.ListAsync(
             query.SearchTerm,
             query.Status,
+            query.RecallFilter,
             query.Page,
             query.PageSize,
             cancellationToken);

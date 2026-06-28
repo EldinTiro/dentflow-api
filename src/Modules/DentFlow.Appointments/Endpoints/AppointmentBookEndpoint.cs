@@ -27,7 +27,13 @@ public class AppointmentBookEndpoint(ISender sender) : Endpoint<BookAppointmentR
         {
             foreach (var error in result.Errors)
                 AddError(error.Description);
-            await SendErrorsAsync(cancellation: ct);
+            var statusCode = result.FirstError.Type switch
+            {
+                ErrorOr.ErrorType.Conflict => 409,
+                ErrorOr.ErrorType.Validation => 400,
+                _ => 400
+            };
+            await SendErrorsAsync(statusCode: statusCode, cancellation: ct);
             return;
         }
         await SendCreatedAtAsync<AppointmentGetByIdEndpoint>(new { id = result.Value.Id }, result.Value, cancellation: ct);

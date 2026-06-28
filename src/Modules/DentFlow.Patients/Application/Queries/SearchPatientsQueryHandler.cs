@@ -12,7 +12,7 @@ public class SearchPatientsQueryHandler(IPatientRepository repo)
         SearchPatientsQuery query, CancellationToken ct)
     {
         var limit = Math.Min(query.Limit, 50);
-        var (items, _) = await repo.ListAsync(query.Q, PatientStatus.Active, 1, limit, ct);
+        var (items, _) = await repo.ListAsync(query.Q, PatientStatus.Active, null, 1, limit, ct);
 
         IReadOnlyList<PatientSearchResult> results = items
             .Select(p => new PatientSearchResult(p.Id, p.PatientNumber, p.FullName, p.PhoneMobile, p.Email))
