@@ -145,6 +145,18 @@ using (var scope = app.Services.CreateScope())
 await SuperAdminSeeder.SeedAsync(app.Services);
 await AppointmentTypeSeeder.SeedAsync(app.Services);
 
+// Demo data for local work only, and off unless explicitly asked for.
+// These seeders were taken off startup deliberately so a real clinic never
+// receives fake patients; this keeps that true while making a fresh local
+// database usable. Enable with Seed__DemoData=true.
+if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Seed:DemoData"))
+{
+    await StaffSeeder.SeedAsync(app.Services);
+    await PatientSeeder.SeedAsync(app.Services);
+    await AppointmentSeeder.SeedAsync(app.Services);
+    await InvoiceSeeder.SeedAsync(app.Services);
+}
+
 // Health check — before any auth middleware
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
    .AllowAnonymous();
