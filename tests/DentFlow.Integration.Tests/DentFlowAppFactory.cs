@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
 using Testcontainers.PostgreSql;
+using DentFlow.Domain.Identity;
 using DentFlow.Infrastructure.Persistence;
 
 namespace DentFlow.Integration.Tests;
@@ -111,6 +113,57 @@ public class DentFlowAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         db.Tenants.Add(tenant);
         await db.SaveChangesAsync();
         return tenant.Id;
+    }
+
+    /// <summary>
+    /// Creates a real user with a real password hash, so a test can exercise the actual
+    /// login endpoint rather than a minted token. Needed for anything that depends on
+    /// what login itself issues — refresh cookies, for instance.
+    /// </summary>
+    public async Task<Guid> SeedUserAsync(string email, string password, string role, Guid? tenantId)
+    {
+        using var scope = Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var roles = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+
+        if (!await roles.RoleExistsAsync(role))
+            await roles.CreateAsync(new ApplicationRole { Name = role });
+
+        var existing = await users.FindByEmailAsync(email);
+        if (existing is not null) return existing.Id;
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            FirstName = "Test",
+            LastName = "User",
+            IsActive = true,
+            EmailConfirmed = true,
+            TenantId = tenantId,
+        };
+
+        var result = await users.CreateAsync(user, password);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(
+                "Could not seed test user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+
+        await users.AddToRoleAsync(user, role);
+        return user.Id;
+    }
+
+    /// <summary>
+    /// Bare client for a tenant host with no Authorization header — for endpoints that
+    /// authenticate themselves, such as login and refresh.
+    /// </summary>
+    public HttpClient CreateAnonymousClient(string tenantSlug)
+    {
+        EnsureTenant(tenantSlug);
+        return CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri($"http://{tenantSlug}.localhost"),
+            HandleCookies = false,
+        });
     }
 
     /// <summary>

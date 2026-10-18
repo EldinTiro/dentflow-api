@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Domain.Identity;
 using DentFlow.Infrastructure.Persistence;
 
@@ -13,7 +14,8 @@ namespace DentFlow.Identity.Endpoints;
 public class LoginEndpoint(
     UserManager<ApplicationUser> userManager,
     ApplicationDbContext db,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    IRefreshTokenService refreshTokens)
     : Endpoint<LoginRequest, LoginResponse>
 {
     public override void Configure()
@@ -47,20 +49,16 @@ public class LoginEndpoint(
 
         var roles = await userManager.GetRolesAsync(user);
 
-        var signingKey = configuration["Jwt:SigningKey"]!;
-        var expiryMinutes = int.TryParse(configuration["Jwt:AccessTokenExpiryMinutes"], out var m) ? m : 15;
+        var (token, expiresInSeconds) =
+            await AuthTokens.CreateAccessTokenAsync(user, userManager, configuration);
 
-        var token = JwtBearer.CreateToken(o =>
-        {
-            o.SigningKey = signingKey;
-            o.ExpireAt = DateTime.UtcNow.AddMinutes(expiryMinutes);
-            o.User.Roles.AddRange(roles);
-            o.User.Claims.Add(("sub", user.Id.ToString()));
-            o.User.Claims.Add(("email", user.Email!));
-            o.User.Claims.Add(("name", user.FullName));
-            if (user.TenantId.HasValue)
-                o.User.Claims.Add(("tid", user.TenantId.Value.ToString()));
-        });
+        // Refresh token in an HttpOnly cookie: the access token is short-lived, and
+        // without this the session simply dies when it expires.
+        var refresh = await refreshTokens.IssueAsync(
+            user.Id, user.TenantId,
+            AuthTokens.ClientIp(HttpContext), AuthTokens.UserAgent(HttpContext.Request), ct);
+
+        AuthTokens.SetRefreshCookie(HttpContext.Response, refresh.Token, refresh.ExpiresAt);
 
         user.LastLoginAt = DateTime.UtcNow;
         await userManager.UpdateAsync(user);
@@ -72,7 +70,7 @@ public class LoginEndpoint(
 
         await SendOkAsync(new LoginResponse(
             AccessToken: token,
-            ExpiresIn: expiryMinutes * 60,
+            ExpiresIn: expiresInSeconds,
             UserId: user.Id,
             Email: user.Email!,
             FullName: user.FullName,
