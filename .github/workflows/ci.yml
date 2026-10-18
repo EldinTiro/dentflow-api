@@ -32,7 +32,7 @@ jobs:
         run: >
           dotnet test DentFlow.sln --no-build -c Release
           --logger "trx;LogFileName=results.trx"
-          --collect:"XPlat Code Coverage"
+          --settings coverlet.runsettings
           --results-directory ./TestResults
 
       - name: Coverage summary

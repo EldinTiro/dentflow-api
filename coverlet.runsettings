@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- EF Core migrations and the model snapshot are generated and run in full
+               during integration tests, which pushed reported line coverage to 85%
+               while branch coverage sat at 20%. Excluded so the number tracks code
+               we actually write. -->
+          <Exclude>[*]DentFlow.Infrastructure.Migrations.*</Exclude>
+          <ExcludeByFile>**/Migrations/*.cs</ExcludeByFile>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
