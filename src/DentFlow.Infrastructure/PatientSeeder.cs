@@ -51,7 +51,8 @@ public static class PatientSeeder
 
         foreach (var tenant in allTenants)
         {
-            var tenantId = Guid.TryParse(tenant.Identifier, out var guid) ? guid : Guid.Empty;
+            // Id is the tenant's Guid; Identifier is the slug.
+            if (!Guid.TryParse(tenant.Id, out var tenantId)) continue;
 
             var existing = await db.Set<Patient>()
                 .IgnoreQueryFilters()
