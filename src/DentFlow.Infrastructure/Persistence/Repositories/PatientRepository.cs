@@ -57,8 +57,18 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
 
     public async Task<string> GeneratePatientNumberAsync(CancellationToken cancellationToken = default)
     {
+        // Scoped to the resolved tenant and counting soft-deleted rows too, so a
+        // number is never reused within a clinic. IgnoreQueryFilters applies to the
+        // whole query tree, so the tenant has to be supplied explicitly — the previous
+        // version compared against an arbitrary row's TenantId and produced duplicates
+        // as soon as more than one tenant existed.
+        var tenantId = dbContext.ResolvedTenantId
+            ?? throw new InvalidOperationException(
+                "Cannot generate a patient number without a resolved tenant.");
+
         var count = await dbContext.Set<Patient>().IgnoreQueryFilters()
-            .CountAsync(p => p.TenantId == dbContext.Set<Patient>().Select(x => x.TenantId).FirstOrDefault(), cancellationToken);
+            .CountAsync(p => p.TenantId == tenantId, cancellationToken);
+
         return $"P-{(count + 1):D6}";
     }
 

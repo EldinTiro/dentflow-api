@@ -54,8 +54,18 @@ public class ApplicationDbContext(
     public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
     public DbSet<TenantNotificationConfig> TenantNotificationConfigs => Set<TenantNotificationConfig>();
 
+    /// <summary>
+    /// The resolved tenant, or null when nothing resolved. Exposed for the few places
+    /// that must scope a query explicitly — e.g. generating a per-tenant sequence
+    /// number, which has to count soft-deleted rows and therefore cannot rely on the
+    /// global query filter.
+    /// </summary>
+    public Guid? ResolvedTenantId => CurrentTenantId;
+
+    // Id carries the tenant's Guid; Identifier carries the slug. Parsing Identifier
+    // never succeeded, so every request resolved to Guid.Empty and tenants shared data.
     private Guid? CurrentTenantId =>
-        Guid.TryParse(multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Identifier, out var id)
+        Guid.TryParse(multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Id, out var id)
             ? id
             : null;
 
@@ -116,12 +126,23 @@ public class ApplicationDbContext(
         }
     }
 
+    /// <summary>
+    /// Read by the global query filters. Must be a property on the context, not a
+    /// captured value: <see cref="OnModelCreating"/> runs once and the model is cached,
+    /// so a baked-in constant would pin every later request to whichever tenant was
+    /// current when the model was first built — in practice Guid.Empty during startup
+    /// migration, which made filtered reads invisible to every real tenant.
+    /// </summary>
+    public Guid FilterTenantId => CurrentTenantId ?? Guid.Empty;
+
     private System.Linq.Expressions.LambdaExpression BuildTenantSoftDeleteFilter(Type entityType)
     {
         var param = System.Linq.Expressions.Expression.Parameter(entityType, "e");
 
         var tenantIdProp = System.Linq.Expressions.Expression.Property(param, nameof(TenantAuditableEntity.TenantId));
-        var currentTenantId = System.Linq.Expressions.Expression.Constant(CurrentTenantId ?? Guid.Empty);
+        // Referencing the context instance makes EF re-evaluate this per query.
+        var currentTenantId = System.Linq.Expressions.Expression.Property(
+            System.Linq.Expressions.Expression.Constant(this), nameof(FilterTenantId));
         var tenantFilter = System.Linq.Expressions.Expression.Equal(tenantIdProp, currentTenantId);
 
         var isDeletedProp = System.Linq.Expressions.Expression.Property(param, nameof(TenantAuditableEntity.IsDeleted));
@@ -141,7 +162,20 @@ public class ApplicationDbContext(
         {
             if (entry.State == EntityState.Added)
             {
-                entry.Entity.SetTenant(tenantId ?? Guid.Empty);
+                if (tenantId.HasValue)
+                {
+                    // Resolved context always wins, so a handler cannot write elsewhere.
+                    entry.Entity.SetTenant(tenantId.Value);
+                }
+                else if (entry.Entity.TenantId == Guid.Empty)
+                {
+                    // Fail closed. Falling back to Guid.Empty here is what orphaned
+                    // every existing row into a shared pool.
+                    throw new InvalidOperationException(
+                        $"Cannot persist {entry.Entity.GetType().Name}: no tenant resolved and no tenant set " +
+                        "explicitly. Seeders and background jobs must call SetTenant before saving.");
+                }
+                // Otherwise the caller set the tenant explicitly (seeders, jobs) — keep it.
             }
 
             if (entry.State == EntityState.Modified)

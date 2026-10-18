@@ -50,11 +50,19 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddHangfireServer();
 }
 
-// Multi-tenancy — subdomain strategy: {slug}.mydentflow.com
+// Multi-tenancy — the tid claim first, {slug}.mydentflow.com subdomain as fallback.
+// Both resolve against the tenants table via TenantStore, so a clinic created by
+// SuperAdmin is immediately resolvable; the old ConfigurationStore could only ever
+// see tenants hardcoded in appsettings.
+//
+// Claim before host is deliberate: a signed-in user's tenant travels with their
+// token, so local dev works on plain localhost and nobody reaches another clinic
+// by editing the subdomain.
 builder.Services
     .AddMultiTenant<TenantInfo>()
+    .WithClaimStrategy("tid")
     .WithHostStrategy("__tenant__.*")
-    .WithConfigurationStore();
+    .WithStore<DentFlow.Infrastructure.Persistence.TenantStore>(ServiceLifetime.Scoped);
 
 // FastEndpoints + JWT (HMAC-SHA256 dev key, swap for RS256 in production)
 var jwtSigningKey = builder.Configuration["Jwt:SigningKey"] ?? string.Empty;
@@ -159,8 +167,10 @@ app.UseSerilogRequestLogging();
 app.UseCors();
 app.UseRateLimiter();
 app.UseRequestLocalization();
-app.UseMultiTenant();
+// Authentication first: the claim strategy reads the tid claim off HttpContext.User,
+// which does not exist until UseAuthentication has run.
 app.UseAuthentication();
+app.UseMultiTenant();
 app.UseAuthorization();
 
 app.UseFastEndpoints(c =>
