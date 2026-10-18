@@ -65,6 +65,8 @@ secrets.json
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
+# Required by CI — integration tests read it for the test JWT key and Finbuckle test tenants
+!appsettings.Testing.json
 
 # Environment files
 .env

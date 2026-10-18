@@ -26,11 +26,19 @@ public static class SuperAdminSeeder
             }
         }
 
-        // Seed SuperAdmin user from config (or use safe defaults for dev)
-        var email = config["SuperAdmin:Email"] ?? "superadmin@DentFlow.local";
-        var password = config["SuperAdmin:Password"] ?? "SuperAdmin123!@#";
+        var email = config["SuperAdmin:Email"];
+        var password = config["SuperAdmin:Password"];
         var firstName = config["SuperAdmin:FirstName"] ?? "Super";
         var lastName = config["SuperAdmin:LastName"] ?? "Admin";
+
+        // No defaults: a hardcoded fallback password would be a publicly known admin credential.
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogError(
+                "SuperAdmin:Email and SuperAdmin:Password are not configured — skipping SuperAdmin seeding. " +
+                "Set them via user-secrets (dev) or environment variables (production).");
+            return;
+        }
 
         var existing = await userManager.FindByEmailAsync(email);
         if (existing is not null)
