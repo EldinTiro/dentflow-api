@@ -26,24 +26,30 @@ jobs:
       - name: Build
         run: dotnet build DentFlow.sln --no-restore -c Release
 
-      - name: Test — Appointments
-        run: dotnet test tests/DentFlow.Appointments.Tests/DentFlow.Appointments.Tests.csproj --no-build -c Release --logger "trx;LogFileName=appointments.trx"
+      # Solution-wide so a new test project cannot silently escape CI.
+      # Integration tests need Docker for Testcontainers — present on ubuntu-latest.
+      - name: Test
+        run: >
+          dotnet test DentFlow.sln --no-build -c Release
+          --logger "trx;LogFileName=results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
 
-      - name: Test — Identity
-        run: dotnet test tests/DentFlow.Identity.Tests/DentFlow.Identity.Tests.csproj --no-build -c Release --logger "trx;LogFileName=identity.trx"
-
-      - name: Test — Patients
-        run: dotnet test tests/DentFlow.Patients.Tests/DentFlow.Patients.Tests.csproj --no-build -c Release --logger "trx;LogFileName=patients.trx"
-
-      - name: Test — Staff
-        run: dotnet test tests/DentFlow.Staff.Tests/DentFlow.Staff.Tests.csproj --no-build -c Release --logger "trx;LogFileName=staff.trx"
-
-      - name: Test — Tenants
-        run: dotnet test tests/DentFlow.Tenants.Tests/DentFlow.Tenants.Tests.csproj --no-build -c Release --logger "trx;LogFileName=tenants.trx"
+      - name: Coverage summary
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:'./TestResults/**/coverage.cobertura.xml' \
+            -targetdir:./TestResults/coverage-report \
+            -reporttypes:'Html;MarkdownSummaryGithub'
+          cat ./TestResults/coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: '**/*.trx'
+          path: |
+            ./TestResults/**/*.trx
+            ./TestResults/coverage-report/**
