@@ -3,6 +3,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UserSecretsId>74d0fac4-4931-41ec-bc45-5ae02fafd17f</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\DentFlow.Application\DentFlow.Application.csproj" />

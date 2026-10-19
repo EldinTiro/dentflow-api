@@ -50,11 +50,19 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddHangfireServer();
 }
 
-// Multi-tenancy — subdomain strategy: {slug}.mydentflow.com
+// Multi-tenancy — the tid claim first, {slug}.mydentflow.com subdomain as fallback.
+// Both resolve against the tenants table via TenantStore, so a clinic created by
+// SuperAdmin is immediately resolvable; the old ConfigurationStore could only ever
+// see tenants hardcoded in appsettings.
+//
+// Claim before host is deliberate: a signed-in user's tenant travels with their
+// token, so local dev works on plain localhost and nobody reaches another clinic
+// by editing the subdomain.
 builder.Services
     .AddMultiTenant<TenantInfo>()
+    .WithClaimStrategy("tid")
     .WithHostStrategy("__tenant__.*")
-    .WithConfigurationStore();
+    .WithStore<DentFlow.Infrastructure.Persistence.TenantStore>(ServiceLifetime.Scoped);
 
 // FastEndpoints + JWT (HMAC-SHA256 dev key, swap for RS256 in production)
 var jwtSigningKey = builder.Configuration["Jwt:SigningKey"] ?? string.Empty;
@@ -137,6 +145,18 @@ using (var scope = app.Services.CreateScope())
 await SuperAdminSeeder.SeedAsync(app.Services);
 await AppointmentTypeSeeder.SeedAsync(app.Services);
 
+// Demo data for local work only, and off unless explicitly asked for.
+// These seeders were taken off startup deliberately so a real clinic never
+// receives fake patients; this keeps that true while making a fresh local
+// database usable. Enable with Seed__DemoData=true.
+if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Seed:DemoData"))
+{
+    await StaffSeeder.SeedAsync(app.Services);
+    await PatientSeeder.SeedAsync(app.Services);
+    await AppointmentSeeder.SeedAsync(app.Services);
+    await InvoiceSeeder.SeedAsync(app.Services);
+}
+
 // Health check — before any auth middleware
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
    .AllowAnonymous();
@@ -159,8 +179,10 @@ app.UseSerilogRequestLogging();
 app.UseCors();
 app.UseRateLimiter();
 app.UseRequestLocalization();
-app.UseMultiTenant();
+// Authentication first: the claim strategy reads the tid claim off HttpContext.User,
+// which does not exist until UseAuthentication has run.
 app.UseAuthentication();
+app.UseMultiTenant();
 app.UseAuthorization();
 
 app.UseFastEndpoints(c =>

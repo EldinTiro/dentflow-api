@@ -38,7 +38,8 @@ public static class AppointmentTypeSeeder
         {
             // In dev Identifier = "localhost" (not a Guid) → Guid.Empty matches dev entities.
             // In production Identifier = the tenant's Guid string.
-            var tenantId = Guid.TryParse(tenant.Identifier, out var guid) ? guid : Guid.Empty;
+            // Id is the tenant's Guid; Identifier is the slug.
+            if (!Guid.TryParse(tenant.Id, out var tenantId)) continue;
 
             var hasTypes = await db.AppointmentTypes
                 .IgnoreQueryFilters()

@@ -105,8 +105,8 @@ public class Tenant : BaseEntity { }
 - **Money**: `decimal` mapped to `NUMERIC(10,2)`
 - **Timestamps**: `DateTime` always UTC, column type `TIMESTAMPTZ`
 - **Soft deletes**: Set `IsDeleted = true` + `DeletedAt` — never `DELETE FROM`
-- **Naming**: snake_case columns (configured in `ApplicationDbContext` via `UseSnakeCaseNamingConvention()`)
-- **Tenant scoping**: Automatic via EF global query filters — never add manual `WHERE tenant_id = ...`
+- **Naming**: snake_case tables, set explicitly per entity via `.ToTable("snake_case_name")` in `ApplicationDbContext` / the `Persistence/Configurations/` classes. There is **no** `UseSnakeCaseNamingConvention()` call — new entities must declare their table name themselves
+- **Tenant scoping**: Automatic via EF global query filters — never add manual `WHERE tenant_id = ...`. ⚠️ The filter mechanism works, but tenant *resolution* currently collapses to `Guid.Empty` (see root `CLAUDE.md` divergences, Faza 1.1)
 - **No raw SQL** for business logic — use EF Core; raw SQL only for reporting queries
 
 ## CQRS Pattern
@@ -151,14 +151,15 @@ if (patient is null) return PatientErrors.NotFound;
 
 ## Authentication & Authorization
 
-- JWT Bearer, 15-min access token, HttpOnly cookie refresh token
-- Roles: `SuperAdmin`, `ClinicOwner`, `Dentist`, `Hygienist`, `Receptionist`, `BillingStaff`, `ReadOnly`
-- Endpoint-level auth: `[Authorize(Roles = "Dentist,ClinicOwner")]` or FastEndpoints `.Roles(...)` 
-- `tenantId` claim is validated against resolved subdomain on every request — never trust client-supplied tenant
+- JWT Bearer. Access token expiry: 15 min in production, 60 min in Development
+- **No refresh token flow exists** — the `RefreshToken` entity and `refresh_tokens` table are unused, and there is no `/auth/refresh` or `/auth/logout`. Target design (HttpOnly cookie + rotation) is Faza 1.2
+- Roles — **8**, defined in `Domain/Identity/Roles.cs`: `SuperAdmin`, `ClinicOwner`, `ClinicAdmin`, `Dentist`, `Hygienist`, `Receptionist`, `BillingStaff`, `ReadOnly`
+- Endpoint-level auth: FastEndpoints `.Roles(...)`. **Only use constants from `Roles.cs`** — `DashboardStatsEndpoint` currently passes `"Admin"` and `"OfficeManager"`, which no user can ever hold (`OfficeManager` is a *staff type* from `StaffTypes.cs`, not an auth role)
+- The `tid` claim is issued at login but is **not** validated against the resolved subdomain anywhere. Do not assume client-supplied tenant is checked
 
 ## Multi-Tenancy Rules
 
-- Resolve tenant via `IMultiTenantContextAccessor<TenantInfo>` — injected in handlers/services
+- Resolve tenant via `IMultiTenantContextAccessor` (non-generic) — injected in handlers/services
 - Never pass `tenantId` as a parameter down through the stack; always resolve from context
 - `TenantAuditableEntity` sets `TenantId` automatically in `ApplicationDbContext.SaveChangesAsync`
 - New module `.csproj` must be added to `DentFlow.API.csproj` and endpoint assembly scanning in `Program.cs`
@@ -183,7 +184,38 @@ RecurringJob.AddOrUpdate<IDailyReportJob>("daily-report", j => j.RunAsync(), Cro
 
 ## Testing Conventions
 
+**TDD is mandatory** — write the failing test first. See root `CLAUDE.md` and `documentation/STRATEGY.md`.
+
+Detailed patterns (mock setup, `ValidCommand(...)` helper, assertion style) are in **`.github/copilot-instructions.md` → Unit Testing**. That guidance is good and applies here; the rules below extend it.
+
 - Unit test handlers in isolation using `NSubstitute` mocks for repositories
-- Integration tests use a real PostgreSQL test database (never mock DbContext)
-- `.http` files in `tests/http/{module}/` for manual API exploration
+- Integration tests use a real PostgreSQL test database via Testcontainers (never mock `DbContext`) — requires Docker running
+- Assert on `error.Code`, never `error.Description` — the code is the contract
 - Test method naming: `MethodName_Scenario_ExpectedResult`
+- `.http` files in `tests/http/{module}/` for manual API exploration
+
+### Which layer to test
+
+Test at the lowest layer where the behaviour lives:
+
+| Behaviour | Where |
+|---|---|
+| Entity invariants, status transitions, calculations | Domain unit test (`InvoiceDomainTests.cs` is the reference) |
+| `ErrorOr` paths, orchestration, side effects | Handler unit test with NSubstitute |
+| HTTP status codes, auth/roles, tenant isolation, query filters | Integration test |
+| HTTP ↔ MediatR mapping, repository plumbing | Don't unit test — covered by integration |
+
+This refines the `.github` rule "only test handlers": that default is right for endpoints and repositories, but **domain logic with real invariants gets its own tests** rather than being reached only through a handler.
+
+### Running tests
+
+```bash
+dotnet test DentFlow.sln                         # everything (needs Docker for integration)
+dotnet test tests/DentFlow.Patients.Tests/       # one module
+
+# with coverage — always pass the runsettings, or generated
+# migrations inflate the number past 85%
+dotnet test DentFlow.sln --settings coverlet.runsettings --results-directory ./TestResults
+```
+
+Baseline at 2026-10-18: **38.3% line, 19.9% branch, 46.3% method** across 71 tests. Identity and Tenants have zero tests.

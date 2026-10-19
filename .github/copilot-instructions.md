@@ -481,8 +481,18 @@ public class BookAppointmentCommandHandlerTests
 }
 ```
 
+### TDD is mandatory
+
+Write the test **first**, run it, confirm it fails for the right reason, then write the minimum implementation that passes, then refactor. Every bug fix starts with a test that reproduces the bug.
+
+Exempt: pure renames/moves, generated EF migrations, config, CI files, docs.
+
+Full strategy and phase plan: `../documentation/STRATEGY.md` (workspace root).
+
 ### Rules
-- **Only test handlers** — not endpoints, not repositories, not domain methods in isolation unless the logic is complex enough to warrant it.
+- **Don't unit test endpoints or repositories** — endpoints only map HTTP ↔ MediatR and repositories are EF plumbing; both are covered by integration tests.
+- **Do test domain logic directly** when it carries real invariants, status transitions or calculations (see `InvoiceDomainTests.cs`). Reaching that logic only through a handler hides which rule broke. Trivial property assignment needs no test.
+- **Tenant isolation, auth/roles and query filters belong in integration tests**, not handler tests — a mocked repository cannot prove a tenant boundary holds.
 - Test method name format: `MethodName_Scenario_ExpectedBehavior` (e.g. `Handle_ProviderConflict_ReturnsConflictError`).
 - Create a `ValidCommand(...)` static helper in each handler test class so each test overrides only the field it cares about.
 - Assert on `result.FirstError.Code` — the error `Code` is the contract. **Do not assert on `error.Description`** — it is a display string that can change.
