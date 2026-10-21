@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<ITreatmentPlanRepository, TreatmentPlanRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IProviderBlockedTimeChecker, ProviderBlockedTimeChecker>();
         services.AddScoped<IProviderAvailabilityReader, ProviderAvailabilityReader>();
         services.AddScoped<ITreatmentPlanReader, TreatmentPlanReader>();
