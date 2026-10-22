@@ -1,6 +1,7 @@
 ﻿using FastEndpoints;
 using MediatR;
 using DentFlow.Treatments.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Treatments.Endpoints;
 
@@ -22,7 +23,7 @@ public class TreatmentPlanItemDeleteEndpoint(ISender sender) : EndpointWithoutRe
 
         if (result.IsError)
         {
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
 

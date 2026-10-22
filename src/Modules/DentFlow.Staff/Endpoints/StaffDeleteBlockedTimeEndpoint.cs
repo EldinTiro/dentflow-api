@@ -1,6 +1,7 @@
 using FastEndpoints;
 using MediatR;
 using DentFlow.Staff.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -18,7 +19,7 @@ public class StaffDeleteBlockedTimeEndpoint(ISender sender) : EndpointWithoutReq
     {
         var blockedTimeId = Route<Guid>("blockedTimeId");
         var result = await sender.Send(new DeleteBlockedTimeCommand(blockedTimeId), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

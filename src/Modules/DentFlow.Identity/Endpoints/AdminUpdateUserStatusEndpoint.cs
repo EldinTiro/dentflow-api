@@ -2,6 +2,7 @@
 using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Identity.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -18,8 +19,8 @@ public class AdminUpdateUserStatusEndpoint(ISender sender) : Endpoint<UpdateUser
     public override async Task HandleAsync(UpdateUserStatusRequest req, CancellationToken ct)
     {
         var id = Route<Guid>("id");
-        var result = await sender.Send(new UpdateUserStatusCommand(id, req.IsActive), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        var result = await sender.Send(new UpdateUserStatusCommand(id, req.IsActive, this.Actor()), ct);
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

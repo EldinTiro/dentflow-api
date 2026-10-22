@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using DentFlow.Identity.Application.Commands;
 using AppRoles = DentFlow.Domain.Identity.Roles;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -41,8 +42,7 @@ public class UserRegisterEndpoint(ISender sender)
 
         if (result.IsError)
         {
-            AddError(result.FirstError.Description);
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
 

@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Queries;
 using DentFlow.Staff.Domain;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -34,7 +35,7 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
 
         if (result.IsError)
         {
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
         await SendOkAsync(result.Value, ct);

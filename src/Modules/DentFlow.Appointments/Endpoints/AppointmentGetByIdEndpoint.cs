@@ -2,6 +2,7 @@
 using MediatR;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Appointments.Endpoints;
 
@@ -19,7 +20,7 @@ public class AppointmentGetByIdEndpoint(ISender sender) : EndpointWithoutRequest
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new GetAppointmentByIdQuery(id), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

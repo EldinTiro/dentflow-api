@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -33,7 +34,7 @@ public class StaffSetAvailabilityEndpoint(ISender sender) : Endpoint<SetStaffAva
 
         var result = await sender.Send(command, ct);
 
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendCreatedAtAsync<StaffGetAvailabilityEndpoint>(new { id = staffMemberId }, result.Value, cancellation: ct);
     }
 }

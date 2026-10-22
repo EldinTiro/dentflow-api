@@ -10,8 +10,9 @@ public class CreatePatientCommandValidator : AbstractValidator<CreatePatientComm
         RuleFor(x => x.LastName).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Email).EmailAddress().MaximumLength(255)
             .When(x => !string.IsNullOrWhiteSpace(x.Email));
-        RuleFor(x => x.PhoneMobile).MaximumLength(30)
-            .When(x => !string.IsNullOrWhiteSpace(x.PhoneMobile));
+        RuleFor(x => x.PhoneMobile).ValidPhone();
+        RuleFor(x => x.PhoneHome).ValidPhone();
+        RuleFor(x => x.PhoneWork).ValidPhone();
         RuleFor(x => x.CountryCode).Length(2)
             .When(x => !string.IsNullOrWhiteSpace(x.CountryCode));
         RuleFor(x => x.DateOfBirth)

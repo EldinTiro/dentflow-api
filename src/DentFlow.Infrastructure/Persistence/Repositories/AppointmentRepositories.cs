@@ -27,7 +27,7 @@ public class AppointmentRepository(ApplicationDbContext dbContext) : IAppointmen
     }
 
     public async Task<(IReadOnlyList<Appointment> Items, int Total)> ListAsync(
-        Guid? patientId, Guid? providerId, DateOnly? dateFrom, DateOnly? dateTo,
+        Guid? patientId, Guid? providerId, DateTime? dateFrom, DateTime? dateTo,
         string? status, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = dbContext.Set<Appointment>().AsQueryable();
@@ -36,16 +36,8 @@ public class AppointmentRepository(ApplicationDbContext dbContext) : IAppointmen
         if (providerId.HasValue) query = query.Where(a => a.ProviderId == providerId.Value);
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(a => a.Status == status);
 
-        if (dateFrom.HasValue)
-        {
-            var fromDt = dateFrom.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            query = query.Where(a => a.StartAt >= fromDt);
-        }
-        if (dateTo.HasValue)
-        {
-            var toDt = dateTo.Value.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
-            query = query.Where(a => a.StartAt <= toDt);
-        }
+        if (dateFrom.HasValue) query = query.Where(a => a.StartAt >= dateFrom.Value);
+        if (dateTo.HasValue) query = query.Where(a => a.StartAt <= dateTo.Value);
 
         var total = await query.CountAsync(cancellationToken);
         var items = await query.OrderBy(a => a.StartAt)

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Domain.Identity;
 using DentFlow.Identity.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -43,8 +44,8 @@ public class ChangeTenantUserRoleEndpoint(ISender sender, UserManager<Applicatio
             return;
         }
 
-        var result = await sender.Send(new ChangeUserRoleCommand(targetId, req.Role), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        var result = await sender.Send(new ChangeUserRoleCommand(targetId, req.Role, this.Actor()), ct);
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

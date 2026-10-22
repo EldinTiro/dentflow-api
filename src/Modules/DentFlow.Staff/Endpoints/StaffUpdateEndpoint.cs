@@ -2,6 +2,7 @@
 using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -24,7 +25,7 @@ public class StaffUpdateEndpoint(ISender sender) : Endpoint<UpdateStaffMemberReq
             req.Address, req.City, req.PostalCode);
 
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

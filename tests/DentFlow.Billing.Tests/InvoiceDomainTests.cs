@@ -161,4 +161,166 @@ public class InvoiceDomainTests
         invoice.PaidAmount.Should().Be(1000m);
         invoice.Status.Should().Be(InvoiceStatus.Paid);
     }
+
+    // ── Line items vs. payments (QA-004) ─────────────────────────────────
+
+    private static Invoice PaidInvoice(decimal total = 75m)
+    {
+        var invoice = CreateInvoice();
+        invoice.AddLineItem(Line(invoice.Id, total));
+        invoice.AddPayment(Payment(invoice.Id, total));
+        return invoice;
+    }
+
+    private static Invoice PartiallyPaidInvoice(decimal total, decimal paid)
+    {
+        var invoice = CreateInvoice();
+        invoice.AddLineItem(Line(invoice.Id, total));
+        invoice.AddPayment(Payment(invoice.Id, paid));
+        return invoice;
+    }
+
+    [Fact]
+    public void AddLineItem_PaidInvoice_IsRejectedAndNothingChanges()
+    {
+        var invoice = PaidInvoice();
+
+        var result = invoice.AddLineItem(Line(invoice.Id, 10m));
+
+        result.IsError.Should().BeTrue();
+        result.FirstError.Code.Should().Be("Invoice.Paid");
+        invoice.SubTotal.Should().Be(75m);
+        invoice.Status.Should().Be(InvoiceStatus.Paid);
+    }
+
+    [Fact]
+    public void AddLineItem_VoidInvoice_IsRejected()
+    {
+        var invoice = CreateInvoice();
+        invoice.Void();
+
+        var result = invoice.AddLineItem(Line(invoice.Id, 10m));
+
+        result.FirstError.Code.Should().Be("Invoice.Voided");
+    }
+
+    [Fact]
+    public void RemoveLineItem_PaidInvoice_IsRejected()
+    {
+        var invoice = PaidInvoice();
+
+        var result = invoice.RemoveLineItem(invoice.LineItems[0]);
+
+        result.FirstError.Code.Should().Be("Invoice.Paid");
+        invoice.LineItems.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void UpdateLineItem_PaidInvoice_IsRejected()
+    {
+        var invoice = PaidInvoice();
+        var item = invoice.LineItems[0];
+
+        var result = invoice.UpdateLineItem(item, "Changed", null, null, 1, 85m);
+
+        result.FirstError.Code.Should().Be("Invoice.Paid");
+        item.UnitFee.Should().Be(75m);
+    }
+
+    [Fact]
+    public void AddLineItem_PartiallyPaid_StaysPartiallyPaidWithLargerBalance()
+    {
+        var invoice = PartiallyPaidInvoice(100m, 40m);
+
+        invoice.AddLineItem(Line(invoice.Id, 10m));
+
+        invoice.Status.Should().Be(InvoiceStatus.PartiallyPaid);
+        invoice.BalanceDue.Should().Be(70m);
+    }
+
+    [Fact]
+    public void RemoveLineItem_PartiallyPaid_BalanceReachesZero_StatusBecomesPaid()
+    {
+        var invoice = CreateInvoice();
+        invoice.AddLineItem(Line(invoice.Id, 60m));
+        var extra = Line(invoice.Id, 40m);
+        invoice.AddLineItem(extra);
+        invoice.AddPayment(Payment(invoice.Id, 60m));
+
+        var result = invoice.RemoveLineItem(extra);
+
+        result.IsError.Should().BeFalse();
+        invoice.Status.Should().Be(InvoiceStatus.Paid);
+    }
+
+    [Fact]
+    public void UpdateLineItem_WouldDropTotalBelowAmountPaid_IsRejected()
+    {
+        var invoice = PartiallyPaidInvoice(100m, 80m);
+        var item = invoice.LineItems[0];
+
+        var result = invoice.UpdateLineItem(item, "Cheaper", null, null, 1, 50m);
+
+        result.FirstError.Code.Should().Be("Invoice.TotalBelowPaid");
+        item.UnitFee.Should().Be(100m);
+    }
+
+    [Fact]
+    public void RemoveLineItem_WouldDropTotalBelowAmountPaid_IsRejected()
+    {
+        var invoice = CreateInvoice();
+        var big = Line(invoice.Id, 100m);
+        invoice.AddLineItem(big);
+        invoice.AddLineItem(Line(invoice.Id, 20m));
+        invoice.AddPayment(Payment(invoice.Id, 50m));
+
+        var result = invoice.RemoveLineItem(big);
+
+        result.FirstError.Code.Should().Be("Invoice.TotalBelowPaid");
+        invoice.LineItems.Should().HaveCount(2);
+    }
+
+    // ── Overdue (QA-025) ─────────────────────────────────────────────────
+
+    private static readonly DateTime Now = new(2026, 10, 22, 12, 0, 0, DateTimeKind.Utc);
+
+    private static Invoice DueInvoice(DateTime? dueDate, decimal fee = 100m)
+    {
+        var invoice = Invoice.Create(Guid.NewGuid(), "INV-1", dueDate, null);
+        invoice.AddLineItem(Line(invoice.Id, fee));
+        return invoice;
+    }
+
+    [Fact]
+    public void IsOverdue_UnpaidPastDueDate_IsTrue() =>
+        DueInvoice(Now.AddDays(-1)).IsOverdueAt(Now).Should().BeTrue();
+
+    [Fact]
+    public void IsOverdue_BeforeDueDate_IsFalse() =>
+        DueInvoice(Now.AddDays(1)).IsOverdueAt(Now).Should().BeFalse();
+
+    [Fact]
+    public void IsOverdue_NoDueDate_IsFalse() =>
+        DueInvoice(null).IsOverdueAt(Now).Should().BeFalse();
+
+    [Fact]
+    public void IsOverdue_PaidOrVoid_IsFalse()
+    {
+        var paid = DueInvoice(Now.AddDays(-1));
+        paid.AddPayment(Payment(paid.Id, 100m));
+        var voided = DueInvoice(Now.AddDays(-1));
+        voided.Void();
+
+        paid.IsOverdueAt(Now).Should().BeFalse();
+        voided.IsOverdueAt(Now).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsOverdue_PartiallyPaidPastDueDate_IsTrue()
+    {
+        var invoice = DueInvoice(Now.AddDays(-1));
+        invoice.AddPayment(Payment(invoice.Id, 40m));
+
+        invoice.IsOverdueAt(Now).Should().BeTrue();
+    }
 }

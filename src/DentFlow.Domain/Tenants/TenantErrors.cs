@@ -11,7 +11,7 @@ public static class TenantErrors
         "Tenant.SlugTaken", "A tenant with this slug already exists.");
 
     public static readonly Error Inactive = Error.Forbidden(
-        "Tenant.Inactive", "This tenant account is suspended.");
+        "Tenant.Inactive", "This clinic's account is suspended. Please contact DentFlow support.");
 
     public static readonly Error SlugInvalid = Error.Validation(
         "Tenant.SlugInvalid", "Slug may only contain lowercase letters, numbers, and hyphens.");

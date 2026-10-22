@@ -2,6 +2,7 @@
 using MediatR;
 using DentFlow.Treatments.Application;
 using DentFlow.Treatments.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Treatments.Endpoints;
 
@@ -24,7 +25,7 @@ public class TreatmentPlanGetByIdEndpoint(ISender sender)
 
         if (result.IsError)
         {
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
 

@@ -24,14 +24,17 @@ public record AppointmentResponse(
     string Source,
     string? ColorHex,
     DateTime CreatedAt,
-    DateTime? UpdatedAt)
+    DateTime? UpdatedAt,
+    string? PatientName = null)
 {
-    public static AppointmentResponse FromEntity(Appointment a) => new(
+    public static AppointmentResponse FromEntity(Appointment a) => FromEntity(a, null);
+
+    public static AppointmentResponse FromEntity(Appointment a, string? patientName) => new(
         a.Id, a.PatientId, a.ProviderId, a.OperatoryId, a.AppointmentTypeId,
         a.Status, a.StartAt, a.EndAt, a.DurationMinutes, a.IsNewPatient,
         a.ChiefComplaint, a.Notes, a.CancellationReason, a.CancelledAt,
         a.ConfirmedAt, a.CheckedInAt, a.StartedAt, a.CompletedAt,
-        a.Source, a.ColorHex, a.CreatedAt, a.UpdatedAt);
+        a.Source, a.ColorHex, a.CreatedAt, a.UpdatedAt, patientName);
 }
 
 public record AppointmentStatusHistoryResponse(

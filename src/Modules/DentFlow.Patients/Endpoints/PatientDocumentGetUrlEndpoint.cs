@@ -1,6 +1,7 @@
 using FastEndpoints;
 using MediatR;
 using DentFlow.Patients.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -21,7 +22,7 @@ public class PatientDocumentGetUrlEndpoint(ISender sender) : EndpointWithoutRequ
         var patientId = Route<Guid>("patientId");
         var id = Route<Guid>("id");
         var result = await sender.Send(new GetPatientDocumentUrlQuery(patientId, id), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(new PatientDocumentUrlResponse(result.Value), ct);
     }
 }

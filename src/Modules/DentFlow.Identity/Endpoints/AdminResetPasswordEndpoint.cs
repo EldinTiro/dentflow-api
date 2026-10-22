@@ -2,6 +2,7 @@
 using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Identity.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -19,7 +20,7 @@ public class AdminResetPasswordEndpoint(ISender sender) : EndpointWithoutRequest
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new ResetUserPasswordCommand(id), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(new ResetPasswordResponse(result.Value.TempPassword), ct);
     }
 }

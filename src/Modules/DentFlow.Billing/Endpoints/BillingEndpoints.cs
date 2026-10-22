@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Billing.Application;
 using DentFlow.Billing.Application.Commands;
 using DentFlow.Billing.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Billing.Endpoints;
 
@@ -31,7 +32,7 @@ public class InvoiceCreateEndpoint(ISender sender)
         var result = await sender.Send(new CreateInvoiceCommand(
             Route<Guid>("patientId"), req.DueDate, req.Notes,
             req.LineItems.AsReadOnly()), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendCreatedAtAsync<InvoiceGetByIdEndpoint>(new { id = result.Value.Id }, result.Value, cancellation: ct);
     }
 }
@@ -56,13 +57,13 @@ public class InvoiceListEndpoint(ISender sender)
         var query = new ListInvoicesQuery(
             Query<Guid?>("patientId", isRequired: false),
             Query<string?>("status", isRequired: false),
-            Query<DateOnly?>("from", isRequired: false),
-            Query<DateOnly?>("to", isRequired: false),
+            DateRangeBound.Parse(Query<string?>("from", isRequired: false), endOfDay: false),
+            DateRangeBound.Parse(Query<string?>("to", isRequired: false), endOfDay: true),
             page > 0 ? page : 1,
             pageSize is > 0 and < 101 ? pageSize : 20);
 
         var result = await sender.Send(query, ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -87,13 +88,13 @@ public class InvoiceListByPatientEndpoint(ISender sender)
         var query = new ListInvoicesQuery(
             Route<Guid>("patientId"),
             Query<string?>("status", isRequired: false),
-            Query<DateOnly?>("from", isRequired: false),
-            Query<DateOnly?>("to", isRequired: false),
+            DateRangeBound.Parse(Query<string?>("from", isRequired: false), endOfDay: false),
+            DateRangeBound.Parse(Query<string?>("to", isRequired: false), endOfDay: true),
             page > 0 ? page : 1,
             pageSize is > 0 and < 101 ? pageSize : 20);
 
         var result = await sender.Send(query, ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -113,7 +114,7 @@ public class InvoiceGetByIdEndpoint(ISender sender) : EndpointWithoutRequest<Inv
     public override async Task HandleAsync(CancellationToken ct)
     {
         var result = await sender.Send(new GetInvoiceByIdQuery(Route<Guid>("id")), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -141,7 +142,7 @@ public class InvoiceUpdateEndpoint(ISender sender)
     {
         var result = await sender.Send(
             new UpdateInvoiceCommand(Route<Guid>("id"), req.DueDate, req.Notes), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -161,7 +162,7 @@ public class InvoiceVoidEndpoint(ISender sender) : EndpointWithoutRequest<Invoic
     public override async Task HandleAsync(CancellationToken ct)
     {
         var result = await sender.Send(new VoidInvoiceCommand(Route<Guid>("id")), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -194,7 +195,7 @@ public class AddLineItemEndpoint(ISender sender)
         var result = await sender.Send(new AddLineItemCommand(
             Route<Guid>("id"), req.Description, req.CdtCode,
             req.ToothNumber, req.Quantity, req.UnitFee, req.TreatmentPlanItemId), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -226,7 +227,7 @@ public class UpdateLineItemEndpoint(ISender sender)
         var result = await sender.Send(new UpdateLineItemCommand(
             Route<Guid>("id"), Route<Guid>("itemId"),
             req.Description, req.CdtCode, req.ToothNumber, req.Quantity, req.UnitFee), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -247,7 +248,7 @@ public class DeleteLineItemEndpoint(ISender sender) : EndpointWithoutRequest
     {
         var result = await sender.Send(
             new DeleteLineItemCommand(Route<Guid>("id"), Route<Guid>("itemId")), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }
@@ -275,7 +276,7 @@ public class CreateInvoiceFromTreatmentPlanEndpoint(ISender sender)
     {
         var result = await sender.Send(
             new CreateInvoiceFromTreatmentPlanCommand(Route<Guid>("planId"), req.DueDate, req.Notes), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendCreatedAtAsync<InvoiceGetByIdEndpoint>(new { id = result.Value.Id }, result.Value, cancellation: ct);
     }
 }
@@ -306,7 +307,7 @@ public class RecordPaymentEndpoint(ISender sender)
     {
         var result = await sender.Send(new RecordPaymentCommand(
             Route<Guid>("id"), req.Amount, req.Method, req.PaidAt, req.Reference, req.Notes), ct);
-        if (result.IsError) { foreach (var e in result.Errors) AddError(e.Description); await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

@@ -38,7 +38,7 @@ public class ${entityName}${input:action}Endpoint(ISender sender)
 
         if (result.IsError)
         {
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);   // using DentFlow.Application.Common.Http;
             return;
         }
 
@@ -64,7 +64,7 @@ public record ${input:action}${entityName}Request(
 - Inject `ISender`, not `IMediator`.
 - `Roles(...)` must use constants from `DentFlow.Domain.Identity.Roles`, never string literals.
 - Map `req` → command manually. Never pass `req` directly to MediatR.
-- Always check `result.IsError` and call `SendErrorsAsync` before the happy path.
+- Always check `result.IsError` and call `this.SendResultErrorsAsync(result.Errors, ct)` before the happy path — never a bare `SendErrorsAsync()`.
 - Use `Version(1)`.
 
 ---

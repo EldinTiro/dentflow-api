@@ -9,8 +9,8 @@ public interface IAppointmentRepository
     Task<(IReadOnlyList<Appointment> Items, int Total)> ListAsync(
         Guid? patientId,
         Guid? providerId,
-        DateOnly? dateFrom,
-        DateOnly? dateTo,
+        DateTime? dateFrom,
+        DateTime? dateTo,
         string? status,
         int page,
         int pageSize,

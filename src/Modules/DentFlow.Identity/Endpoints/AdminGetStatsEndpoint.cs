@@ -2,6 +2,7 @@
 using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Identity.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -18,7 +19,7 @@ public class AdminGetStatsEndpoint(ISender sender) : EndpointWithoutRequest<Plat
     public override async Task HandleAsync(CancellationToken ct)
     {
         var result = await sender.Send(new GetPlatformStatsQuery(), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

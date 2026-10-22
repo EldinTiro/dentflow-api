@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Application.Common.Interfaces;
 using DentFlow.Appointments.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Appointments.Endpoints;
 
@@ -26,7 +27,7 @@ public class AppointmentSlotsEndpoint(ISender sender)
             date = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var result = await sender.Send(new GetAvailableSlotsQuery(providerId, date, duration), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

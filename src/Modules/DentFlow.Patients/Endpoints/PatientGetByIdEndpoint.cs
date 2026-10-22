@@ -2,6 +2,7 @@
 using MediatR;
 using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -21,12 +22,7 @@ public class PatientGetByIdEndpoint(ISender sender) : EndpointWithoutRequest<Pat
         var result = await sender.Send(new GetPatientByIdQuery(id), ct);
         if (result.IsError)
         {
-            if (result.FirstError.Type == ErrorOr.ErrorType.NotFound)
-            {
-                await SendNotFoundAsync(ct);
-                return;
-            }
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
         await SendOkAsync(result.Value, ct);

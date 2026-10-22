@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using DentFlow.Patients.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -48,9 +49,7 @@ public class PatientDocumentUploadEndpoint(ISender sender)
         var result = await sender.Send(command, ct);
         if (result.IsError)
         {
-            foreach (var e in result.Errors)
-                AddError(e.Description);
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
         await SendCreatedAtAsync<PatientDocumentListEndpoint>(

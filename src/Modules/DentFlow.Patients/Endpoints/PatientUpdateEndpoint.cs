@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Patients.Domain;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -28,7 +29,7 @@ public class PatientUpdateEndpoint(ISender sender) : Endpoint<UpdatePatientReque
             req.PreferredProviderId, req.SmsOptIn, req.EmailOptIn, req.Notes);
 
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

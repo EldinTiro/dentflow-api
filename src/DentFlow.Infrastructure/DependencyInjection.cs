@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IProviderAvailabilityReader, ProviderAvailabilityReader>();
         services.AddScoped<ITreatmentPlanReader, TreatmentPlanReader>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IPatientDirectory, PatientDirectory>();
         services.AddHttpContextAccessor();
         services.AddScoped<IFeatureService, TierFeatureService>();
 

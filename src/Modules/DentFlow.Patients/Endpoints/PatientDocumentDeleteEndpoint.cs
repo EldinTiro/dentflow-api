@@ -1,6 +1,7 @@
 using FastEndpoints;
 using MediatR;
 using DentFlow.Patients.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -19,7 +20,7 @@ public class PatientDocumentDeleteEndpoint(ISender sender) : EndpointWithoutRequ
         var patientId = Route<Guid>("patientId");
         var id = Route<Guid>("id");
         var result = await sender.Send(new DeletePatientDocumentCommand(patientId, id), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

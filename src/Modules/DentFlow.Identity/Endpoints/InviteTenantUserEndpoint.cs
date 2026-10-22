@@ -2,6 +2,7 @@
 using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Identity.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -28,7 +29,7 @@ public class InviteTenantUserEndpoint(ISender sender)
         var result = await sender.Send(
             new InviteTenantUserCommand(tenantId, req.Email, req.FirstName, req.LastName, req.Role), ct);
 
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
 
         await SendAsync(result.Value, statusCode: 201, cancellation: ct);
     }

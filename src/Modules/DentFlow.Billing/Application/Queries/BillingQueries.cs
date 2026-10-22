@@ -1,3 +1,4 @@
+using DentFlow.Application.Common.Interfaces;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
@@ -26,13 +27,13 @@ public class GetInvoiceByIdQueryHandler(IInvoiceRepository repo)
 public record ListInvoicesQuery(
     Guid? PatientId,
     string? Status,
-    DateOnly? From,
-    DateOnly? To,
+    DateTime? From, // UTC, inclusive
+    DateTime? To,   // UTC, inclusive
     int Page = 1,
     int PageSize = 20)
     : IRequest<ErrorOr<PagedResult<InvoiceSummaryResponse>>>;
 
-public class ListInvoicesQueryHandler(IInvoiceRepository repo)
+public class ListInvoicesQueryHandler(IInvoiceRepository repo, IPatientDirectory patients)
     : IRequestHandler<ListInvoicesQuery, ErrorOr<PagedResult<InvoiceSummaryResponse>>>
 {
     public async Task<ErrorOr<PagedResult<InvoiceSummaryResponse>>> Handle(
@@ -47,7 +48,12 @@ public class ListInvoicesQueryHandler(IInvoiceRepository repo)
             query.PatientId, statusFilter, query.From, query.To,
             query.Page, query.PageSize, ct);
 
-        var responses = items.Select(InvoiceSummaryResponse.FromEntity).ToList().AsReadOnly();
+        // The list could not tell invoices apart without opening them (QA-025).
+        var names = await patients.GetNamesAsync(items.Select(i => i.PatientId), ct);
+        var now = DateTime.UtcNow;
+        var responses = items
+            .Select(i => InvoiceSummaryResponse.FromEntity(i, names.GetValueOrDefault(i.PatientId), now))
+            .ToList().AsReadOnly();
         return new PagedResult<InvoiceSummaryResponse>(responses, total, query.Page, query.PageSize);
     }
 }

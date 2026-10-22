@@ -57,7 +57,7 @@ public class RefreshEndpoint(
         }
 
         var user = await userManager.FindByIdAsync(rotation.Value.UserId.ToString());
-        if (user is null || !user.IsActive)
+        if (user is null || !user.IsActive || await db.IsTenantSuspendedAsync(user.TenantId, ct))
         {
             await refreshTokens.RevokeAsync(rotation.Value.Token, ct);
             AuthTokens.ClearRefreshCookie(HttpContext.Response);
@@ -84,7 +84,8 @@ public class RefreshEndpoint(
             Email: user.Email!,
             FullName: user.FullName,
             Roles: [.. roles],
-            Language: language
+            Language: language,
+            MustChangePassword: user.MustChangePassword
         ), ct);
     }
 }
@@ -96,4 +97,5 @@ public record RefreshResponse(
     string Email,
     string FullName,
     List<string> Roles,
-    string Language);
+    string Language,
+    bool MustChangePassword);

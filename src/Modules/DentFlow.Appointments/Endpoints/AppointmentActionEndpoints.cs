@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Commands;
 using DentFlow.Appointments.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Appointments.Endpoints;
 
@@ -22,8 +23,8 @@ public class AppointmentRescheduleEndpoint(ISender sender) : Endpoint<Reschedule
         var result = await sender.Send(new RescheduleAppointmentCommand(id, req.NewStartAt, req.NewEndAt), ct);
         if (result.IsError)
         {
-            foreach (var error in result.Errors) AddError(error.Description);
-            await SendErrorsAsync(cancellation: ct); return;
+            await this.SendResultErrorsAsync(result.Errors, ct);
+            return;
         }
         await SendOkAsync(result.Value, ct);
     }
@@ -49,8 +50,8 @@ public class AppointmentCancelEndpoint(ISender sender) : Endpoint<CancelAppointm
         var result = await sender.Send(new CancelAppointmentCommand(id, req.Reason, userId), ct);
         if (result.IsError)
         {
-            foreach (var error in result.Errors) AddError(error.Description);
-            await SendErrorsAsync(cancellation: ct); return;
+            await this.SendResultErrorsAsync(result.Errors, ct);
+            return;
         }
         await SendOkAsync(result.Value, ct);
     }
@@ -76,8 +77,8 @@ public class AppointmentUpdateStatusEndpoint(ISender sender) : Endpoint<UpdateSt
         var result = await sender.Send(new UpdateAppointmentStatusCommand(id, req.Status, userId), ct);
         if (result.IsError)
         {
-            foreach (var error in result.Errors) AddError(error.Description);
-            await SendErrorsAsync(cancellation: ct); return;
+            await this.SendResultErrorsAsync(result.Errors, ct);
+            return;
         }
         await SendOkAsync(result.Value, ct);
     }
@@ -103,8 +104,8 @@ public class AppointmentOverrideStatusEndpoint(ISender sender) : Endpoint<Overri
         var result = await sender.Send(new OverrideAppointmentStatusCommand(id, req.NewStatus, req.Reason, userId), ct);
         if (result.IsError)
         {
-            foreach (var error in result.Errors) AddError(error.Description);
-            await SendErrorsAsync(cancellation: ct); return;
+            await this.SendResultErrorsAsync(result.Errors, ct);
+            return;
         }
         await SendOkAsync(result.Value, ct);
     }
@@ -130,8 +131,8 @@ public class AppointmentUpdateNotesEndpoint(ISender sender) : Endpoint<UpdateNot
         var result = await sender.Send(new UpdateAppointmentNotesCommand(id, req.Notes, userId), ct);
         if (result.IsError)
         {
-            foreach (var error in result.Errors) AddError(error.Description);
-            await SendErrorsAsync(cancellation: ct); return;
+            await this.SendResultErrorsAsync(result.Errors, ct);
+            return;
         }
         await SendOkAsync(result.Value, ct);
     }
@@ -156,8 +157,8 @@ public class AppointmentGetHistoryEndpoint(ISender sender)
         var result = await sender.Send(new GetAppointmentHistoryQuery(id), ct);
         if (result.IsError)
         {
-            foreach (var error in result.Errors) AddError(error.Description);
-            await SendErrorsAsync(cancellation: ct); return;
+            await this.SendResultErrorsAsync(result.Errors, ct);
+            return;
         }
         await SendOkAsync(result.Value, ct);
     }
