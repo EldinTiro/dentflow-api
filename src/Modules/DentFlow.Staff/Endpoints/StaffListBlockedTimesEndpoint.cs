@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -22,7 +23,7 @@ public class StaffListBlockedTimesEndpoint(ISender sender) : EndpointWithoutRequ
         var to = Query<DateOnly?>("to", isRequired: false);
 
         var result = await sender.Send(new ListBlockedTimesQuery(id, from, to), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

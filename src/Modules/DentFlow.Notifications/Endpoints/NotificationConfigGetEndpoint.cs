@@ -4,6 +4,7 @@ using System.Security.Claims;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Notifications.Application;
 using DentFlow.Notifications.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Notifications.Endpoints;
 
@@ -27,7 +28,7 @@ public class NotificationConfigGetEndpoint(ISender sender) : EndpointWithoutRequ
         }
 
         var result = await sender.Send(new GetNotificationConfigQuery(tenantId), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

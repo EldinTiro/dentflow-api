@@ -276,9 +276,8 @@ public class CreatePatientCommandHandler(IPatientRepository repo)
   ```
 - Endpoints map results:
   ```csharp
-  return result.Match(
-      patient => SendAsync(patient, 200, ct),
-      errors  => SendErrorsAsync(errors, ct));
+  if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
+  await SendOkAsync(result.Value, ct);
   ```
 - Unhandled exceptions ? RFC 9457 `ProblemDetails` via global exception middleware
 

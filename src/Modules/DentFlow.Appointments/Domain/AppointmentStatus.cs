@@ -18,6 +18,10 @@ public static class AppointmentStatus
             [InProgress] = [Completed],
         };
 
+    /// <summary>Not started yet — the only states a visit can be moved from (QA-034).</summary>
+    public static bool CanReschedule(string status) =>
+        status is Scheduled or CheckedIn;
+
     public static bool IsTerminal(string status) =>
         status is Completed or Cancelled or NoShow;
 

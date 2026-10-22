@@ -8,8 +8,8 @@ public record GetAppointmentByIdQuery(Guid Id) : IRequest<ErrorOr<AppointmentRes
 public record ListAppointmentsQuery(
     Guid? PatientId = null,
     Guid? ProviderId = null,
-    DateOnly? DateFrom = null,
-    DateOnly? DateTo = null,
+    DateTime? DateFrom = null, // UTC, inclusive
+    DateTime? DateTo = null,   // UTC, inclusive
     string? Status = null,
     int Page = 1,
     int PageSize = 50) : IRequest<ErrorOr<PagedResult<AppointmentResponse>>>;

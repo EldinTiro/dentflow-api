@@ -3,6 +3,7 @@ using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Tenants.Application;
 using DentFlow.Tenants.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Tenants.Endpoints;
 
@@ -26,9 +27,7 @@ public class TenantCreateEndpoint(ISender sender) : Endpoint<CreateTenantRequest
         var result = await sender.Send(command, ct);
         if (result.IsError)
         {
-            foreach (var e in result.Errors)
-                AddError(e.Code, e.Description);
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
 

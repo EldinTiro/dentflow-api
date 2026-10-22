@@ -1,4 +1,5 @@
-﻿using ErrorOr;
+﻿using DentFlow.Application.Common.Interfaces;
+using ErrorOr;
 using MediatR;
 using DentFlow.Appointments.Application.Interfaces;
 using DentFlow.Appointments.Domain;
@@ -29,7 +30,7 @@ public class GetAppointmentByIdQueryHandler(IAppointmentRepository repo)
     }
 }
 
-public class ListAppointmentsQueryHandler(IAppointmentRepository repo)
+public class ListAppointmentsQueryHandler(IAppointmentRepository repo, IPatientDirectory patients)
     : IRequestHandler<ListAppointmentsQuery, ErrorOr<PagedResult<AppointmentResponse>>>
 {
     public async Task<ErrorOr<PagedResult<AppointmentResponse>>> Handle(
@@ -40,7 +41,11 @@ public class ListAppointmentsQueryHandler(IAppointmentRepository repo)
             query.DateFrom, query.DateTo, query.Status,
             query.Page, query.PageSize, cancellationToken);
 
-        var responses = items.Select(AppointmentResponse.FromEntity).ToList();
+        // Names come with the list; clients used to fetch 500 patients to label it (QA-033).
+        var names = await patients.GetNamesAsync(items.Select(a => a.PatientId), cancellationToken);
+        var responses = items
+            .Select(a => AppointmentResponse.FromEntity(a, names.GetValueOrDefault(a.PatientId)))
+            .ToList();
         return new PagedResult<AppointmentResponse>(responses, total, query.Page, query.PageSize);
     }
 }

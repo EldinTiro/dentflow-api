@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Staff.Domain;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -30,7 +31,7 @@ public class StaffCreateEndpoint(ISender sender) : Endpoint<CreateStaffMemberReq
 
         if (result.IsError)
         {
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
         await SendCreatedAtAsync<StaffGetByIdEndpoint>(new { id = result.Value.Id }, result.Value, cancellation: ct);

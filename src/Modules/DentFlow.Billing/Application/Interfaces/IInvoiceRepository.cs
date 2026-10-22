@@ -9,8 +9,8 @@ public interface IInvoiceRepository
     Task<(IReadOnlyList<Invoice> Items, int Total)> ListAsync(
         Guid? patientId,
         InvoiceStatus? status,
-        DateOnly? from,
-        DateOnly? to,
+        DateTime? from,
+        DateTime? to,
         int page,
         int pageSize,
         CancellationToken ct = default);

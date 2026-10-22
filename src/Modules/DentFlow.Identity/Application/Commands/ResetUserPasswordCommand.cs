@@ -25,6 +25,9 @@ public class ResetUserPasswordCommandHandler(UserManager<ApplicationUser> userMa
         if (!result.Succeeded)
             return result.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
 
+        user.MustChangePassword = true;
+        await userManager.UpdateAsync(user);
+
         return new ResetUserPasswordResult(tempPassword);
     }
 }

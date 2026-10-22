@@ -66,10 +66,12 @@ public record InvoiceSummaryResponse(
     decimal PaidAmount,
     decimal BalanceDue,
     int LineItemCount,
-    DateTime CreatedAt)
+    DateTime CreatedAt,
+    string? PatientName,
+    bool IsOverdue)
 {
-    public static InvoiceSummaryResponse FromEntity(Invoice inv) =>
+    public static InvoiceSummaryResponse FromEntity(Invoice inv, string? patientName, DateTime utcNow) =>
         new(inv.Id, inv.PatientId, inv.InvoiceNumber, inv.Status.ToString(),
             inv.IssuedAt, inv.DueDate, inv.SubTotal, inv.PaidAmount, inv.BalanceDue,
-            inv.LineItems.Count, inv.CreatedAt);
+            inv.LineItems.Count, inv.CreatedAt, patientName, inv.IsOverdueAt(utcNow));
 }

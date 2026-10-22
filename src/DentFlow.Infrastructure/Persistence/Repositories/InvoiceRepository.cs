@@ -19,8 +19,8 @@ public class InvoiceRepository(ApplicationDbContext dbContext) : IInvoiceReposit
     public async Task<(IReadOnlyList<Invoice> Items, int Total)> ListAsync(
         Guid? patientId,
         InvoiceStatus? status,
-        DateOnly? from,
-        DateOnly? to,
+        DateTime? from,
+        DateTime? to,
         int page,
         int pageSize,
         CancellationToken ct)
@@ -36,17 +36,8 @@ public class InvoiceRepository(ApplicationDbContext dbContext) : IInvoiceReposit
         if (status.HasValue)
             query = query.Where(i => i.Status == status.Value);
 
-        if (from.HasValue)
-        {
-            var fromUtc = DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
-            query = query.Where(i => i.IssuedAt >= fromUtc);
-        }
-
-        if (to.HasValue)
-        {
-            var toUtc = DateTime.SpecifyKind(to.Value.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
-            query = query.Where(i => i.IssuedAt <= toUtc);
-        }
+        if (from.HasValue) query = query.Where(i => i.IssuedAt >= from.Value);
+        if (to.HasValue) query = query.Where(i => i.IssuedAt <= to.Value);
 
         var total = await query.CountAsync(ct);
         var items = await query

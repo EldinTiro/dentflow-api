@@ -60,7 +60,7 @@ All endpoints:
 - Inject `ISender`
 - Call `Roles(...)` with constants from `DentFlow.Domain.Identity.Roles`
 - Call `Version(1)`
-- Use `SendErrorsAsync` on `result.IsError`
+- Use `this.SendResultErrorsAsync(result.Errors, ct)` on `result.IsError`
 
 ### Module wiring
 

@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -32,7 +33,7 @@ public class StaffAddBlockedTimeEndpoint(ISender sender) : Endpoint<AddBlockedTi
 
         var result = await sender.Send(command, ct);
 
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendCreatedAtAsync<StaffListBlockedTimesEndpoint>(new { id = staffMemberId }, result.Value, cancellation: ct);
     }
 }

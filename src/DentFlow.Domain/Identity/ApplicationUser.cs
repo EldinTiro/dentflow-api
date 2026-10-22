@@ -14,6 +14,12 @@ public class ApplicationUser : IdentityUser<Guid>
     public string? AvatarUrl { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>
+    /// Set when someone else chose the password (invite, provisioning, admin reset).
+    /// Until the user picks their own, the API only lets them change it (QA-011).
+    /// </summary>
+    public bool MustChangePassword { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public string FullName => $"{FirstName} {LastName}";

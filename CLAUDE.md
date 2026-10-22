@@ -106,7 +106,7 @@ public class Tenant : BaseEntity { }
 - **Timestamps**: `DateTime` always UTC, column type `TIMESTAMPTZ`
 - **Soft deletes**: Set `IsDeleted = true` + `DeletedAt` — never `DELETE FROM`
 - **Naming**: snake_case tables, set explicitly per entity via `.ToTable("snake_case_name")` in `ApplicationDbContext` / the `Persistence/Configurations/` classes. There is **no** `UseSnakeCaseNamingConvention()` call — new entities must declare their table name themselves
-- **Tenant scoping**: Automatic via EF global query filters — never add manual `WHERE tenant_id = ...`. ⚠️ The filter mechanism works, but tenant *resolution* currently collapses to `Guid.Empty` (see root `CLAUDE.md` divergences, Faza 1.1)
+- **Tenant scoping**: Automatic via EF global query filters — never add manual `WHERE tenant_id = ...`, and never `IgnoreQueryFilters()` + a hand-written tenant check (that is how the dashboard read zeros for every clinic, QA-003). Tenant resolves from the `tid` claim, then the subdomain; `TenantStore` reads the `tenants` table
 - **No raw SQL** for business logic — use EF Core; raw SQL only for reporting queries
 
 ## CQRS Pattern
@@ -127,10 +127,11 @@ public class PatientCreateEndpoint : Endpoint<CreatePatientRequest, PatientRespo
 {
     public override async Task HandleAsync(CreatePatientRequest req, CancellationToken ct)
     {
-        var result = await mediator.Send(req.ToCommand());
-        await result.MatchAsync(
-            onValue: async p => await SendOkAsync(p, ct),
-            onError: async errors => await SendErrorsAsync(errors, ct));
+        var result = await sender.Send(req.ToCommand(), ct);
+        // Maps ErrorType → status (404/409/400…) and sends every error description.
+        // A bare SendErrorsAsync() here is rejected by DentFlow.Architecture.Tests (QA-005).
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
+        await SendOkAsync(result.Value, ct);
     }
 }
 ```
@@ -152,7 +153,10 @@ if (patient is null) return PatientErrors.NotFound;
 ## Authentication & Authorization
 
 - JWT Bearer. Access token expiry: 15 min in production, 60 min in Development
-- **No refresh token flow exists** — the `RefreshToken` entity and `refresh_tokens` table are unused, and there is no `/auth/refresh` or `/auth/logout`. Target design (HttpOnly cookie + rotation) is Faza 1.2
+- **Refresh tokens**: `/auth/refresh` rotates an HttpOnly cookie (path `/api/v1/auth`) and revokes the whole family on reuse; `/auth/logout` revokes it. Only a hash is stored
+- **Suspended clinics**: a deactivated tenant cannot log in (403 `Tenant.Inactive`) or refresh, and `SuspendedTenantMiddleware` answers 403 to its existing access tokens
+- **Temporary passwords**: users created by invite/provisioning or reset by an admin get `MustChangePassword`; their token carries `pwd_change` and `PasswordChangeRequiredMiddleware` blocks everything but `/auth/*` and `/users/me*` until they change it
+- **User-management guards** live in the Identity handlers (`UserManagementGuard`): no self role-change/deactivation, a clinic keeps an active owner, the platform keeps an active SuperAdmin, only owners touch owners
 - Roles — **8**, defined in `Domain/Identity/Roles.cs`: `SuperAdmin`, `ClinicOwner`, `ClinicAdmin`, `Dentist`, `Hygienist`, `Receptionist`, `BillingStaff`, `ReadOnly`
 - Endpoint-level auth: FastEndpoints `.Roles(...)`. **Only use constants from `Roles.cs`** — `DashboardStatsEndpoint` currently passes `"Admin"` and `"OfficeManager"`, which no user can ever hold (`OfficeManager` is a *staff type* from `StaffTypes.cs`, not an auth role)
 - The `tid` claim is issued at login but is **not** validated against the resolved subdomain anywhere. Do not assume client-supplied tenant is checked

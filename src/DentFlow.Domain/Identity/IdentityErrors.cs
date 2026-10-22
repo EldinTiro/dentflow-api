@@ -28,7 +28,27 @@ public static class IdentityErrors
     public static readonly Error EmailAlreadyExists = Error.Conflict(
         "Auth.EmailAlreadyExists", "An account with this email already exists.");
 
+    public static readonly Error PasswordChangeRequired = Error.Forbidden(
+        "Auth.PasswordChangeRequired", "Please choose a new password before continuing.");
+
     public static readonly Error UserNotFound = Error.NotFound(
         "Auth.UserNotFound", "User not found.");
+
+    // ── User management guards (QA-012) ─────────────────────────────────
+
+    public static readonly Error CannotChangeOwnAccount = Error.Conflict(
+        "User.Self", "You cannot change your own role or deactivate your own account.");
+
+    public static readonly Error LastClinicOwner = Error.Conflict(
+        "User.LastClinicOwner", "A clinic must keep at least one active owner.");
+
+    public static readonly Error LastSuperAdmin = Error.Conflict(
+        "User.LastSuperAdmin", "The platform must keep at least one active SuperAdmin.");
+
+    public static readonly Error OwnerOnly = Error.Forbidden(
+        "User.OwnerOnly", "Only a clinic owner can change another owner or grant the owner role.");
+
+    public static readonly Error SuperAdminForClinicUser = Error.Validation(
+        "User.SuperAdminForClinicUser", "The SuperAdmin role cannot be given to a clinic user.");
 }
 

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Notifications.Application;
 using DentFlow.Notifications.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Notifications.Endpoints;
 
@@ -43,8 +44,7 @@ public class NotificationConfigUpdateEndpoint(ISender sender)
 
         if (result.IsError)
         {
-            foreach (var e in result.Errors) AddError(e.Description);
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
 

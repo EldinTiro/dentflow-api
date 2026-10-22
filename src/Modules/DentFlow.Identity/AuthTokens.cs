@@ -44,6 +44,8 @@ internal static class AuthTokens
             o.User.Claims.Add(("name", user.FullName));
             if (user.TenantId.HasValue)
                 o.User.Claims.Add(("tid", user.TenantId.Value.ToString()));
+            if (user.MustChangePassword)
+                o.User.Claims.Add((IdentityClaims.PasswordChangeRequired, "true"));
         });
 
         return (token, expiryMinutes * 60);

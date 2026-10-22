@@ -139,8 +139,9 @@ public class RecordPaymentCommandHandlerTests
             invoice.Id, 100m, "Cash", DateTime.UtcNow, null, null), CancellationToken.None);
 
         result.IsError.Should().BeFalse();
+        result.Value.Status.Should().Be("PartiallyPaid");
+        invoice.Payments.Should().ContainSingle();
         await _repo.Received(1).AddPaymentAsync(Arg.Any<InvoicePayment>(), Arg.Any<CancellationToken>());
-        await _repo.Received(1).UpdateAsync(Arg.Any<Invoice>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -222,6 +223,77 @@ public class AddLineItemCommandHandlerTests
         result.FirstError.Code.Should().Be("Invoice.Voided");
         await _repo.DidNotReceive().AddLineItemAsync(Arg.Any<InvoiceLineItem>(), Arg.Any<CancellationToken>());
     }
+
+    // QA-004
+    [Fact]
+    public async Task Handle_PaidInvoice_ReturnsPaidConflict()
+    {
+        var invoice = BillingTestData.PaidInvoice(75m);
+        _repo.GetByIdWithDetailsAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
+
+        var result = await _sut.Handle(
+            new AddLineItemCommand(invoice.Id, "Extra", null, null, 1, 10m, null),
+            CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Invoice.Paid");
+        await _repo.DidNotReceive().AddLineItemAsync(Arg.Any<InvoiceLineItem>(), Arg.Any<CancellationToken>());
+    }
+}
+
+// ── UpdateLineItem ────────────────────────────────────────────────────────────
+
+public class UpdateLineItemCommandHandlerTests
+{
+    private readonly IInvoiceRepository _repo = Substitute.For<IInvoiceRepository>();
+    private readonly UpdateLineItemCommandHandler _sut;
+
+    public UpdateLineItemCommandHandlerTests() =>
+        _sut = new UpdateLineItemCommandHandler(_repo);
+
+    // QA-004: the edit was applied in memory and never saved
+    [Fact]
+    public async Task Handle_ValidChange_IsSaved()
+    {
+        var invoice = Invoice.Create(Guid.NewGuid(), "INV-001", null, null);
+        var item = InvoiceLineItem.Create(invoice.Id, "Checkup", null, null, 1, 80m);
+        invoice.AddLineItem(item);
+        _repo.GetByIdWithDetailsAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
+
+        var result = await _sut.Handle(
+            new UpdateLineItemCommand(invoice.Id, item.Id, "Checkup", null, null, 1, 90m),
+            CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        item.UnitFee.Should().Be(90m);
+        await _repo.Received(1).UpdateAsync(invoice, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_PaidInvoice_ReturnsPaidConflict()
+    {
+        var invoice = BillingTestData.PaidInvoice(75m);
+        _repo.GetByIdWithDetailsAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
+
+        var result = await _sut.Handle(
+            new UpdateLineItemCommand(invoice.Id, invoice.LineItems[0].Id, "X", null, null, 1, 85m),
+            CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Invoice.Paid");
+        await _repo.DidNotReceive().UpdateAsync(Arg.Any<Invoice>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_LineItemOfAnotherInvoice_ReturnsNotFound()
+    {
+        var invoice = Invoice.Create(Guid.NewGuid(), "INV-001", null, null);
+        _repo.GetByIdWithDetailsAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
+
+        var result = await _sut.Handle(
+            new UpdateLineItemCommand(invoice.Id, Guid.NewGuid(), "X", null, null, 1, 85m),
+            CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Invoice.LineItemNotFound");
+    }
 }
 
 // ── DeleteLineItem ────────────────────────────────────────────────────────────
@@ -239,8 +311,8 @@ public class DeleteLineItemCommandHandlerTests
     {
         var invoice = Invoice.Create(Guid.NewGuid(), "INV-001", null, null);
         var item = InvoiceLineItem.Create(invoice.Id, "Checkup", null, null, 1, 80m);
+        invoice.AddLineItem(item);
         _repo.GetByIdWithDetailsAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
-        _repo.GetLineItemByIdAsync(item.Id, Arg.Any<CancellationToken>()).Returns(item);
 
         var result = await _sut.Handle(
             new DeleteLineItemCommand(invoice.Id, item.Id), CancellationToken.None);
@@ -254,13 +326,36 @@ public class DeleteLineItemCommandHandlerTests
     {
         var invoice = Invoice.Create(Guid.NewGuid(), "INV-001", null, null);
         _repo.GetByIdWithDetailsAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
-        _repo.GetLineItemByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-             .Returns((InvoiceLineItem?)null);
 
         var result = await _sut.Handle(
             new DeleteLineItemCommand(invoice.Id, Guid.NewGuid()), CancellationToken.None);
 
         result.IsError.Should().BeTrue();
         result.FirstError.Code.Should().Be("Invoice.LineItemNotFound");
+    }
+
+    // QA-004
+    [Fact]
+    public async Task Handle_PaidInvoice_ReturnsPaidConflict()
+    {
+        var invoice = BillingTestData.PaidInvoice(75m);
+        _repo.GetByIdWithDetailsAsync(invoice.Id, Arg.Any<CancellationToken>()).Returns(invoice);
+
+        var result = await _sut.Handle(
+            new DeleteLineItemCommand(invoice.Id, invoice.LineItems[0].Id), CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Invoice.Paid");
+        await _repo.DidNotReceive().RemoveLineItemAsync(Arg.Any<InvoiceLineItem>(), Arg.Any<CancellationToken>());
+    }
+}
+
+internal static class BillingTestData
+{
+    public static Invoice PaidInvoice(decimal total)
+    {
+        var invoice = Invoice.Create(Guid.NewGuid(), "INV-PAID", null, null);
+        invoice.AddLineItem(InvoiceLineItem.Create(invoice.Id, "Service", null, null, 1, total));
+        invoice.AddPayment(InvoicePayment.Create(invoice.Id, total, PaymentMethod.Cash, DateTime.UtcNow, null, null));
+        return invoice;
     }
 }

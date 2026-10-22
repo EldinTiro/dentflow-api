@@ -4,6 +4,7 @@ using System.Security.Claims;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Tenants.Application;
 using DentFlow.Tenants.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Tenants.Endpoints;
 
@@ -35,7 +36,7 @@ public class ClinicSettingsGetEndpoint(ISender sender) : EndpointWithoutRequest<
         }
 
         var result = await sender.Send(new GetClinicSettingsQuery(tenantId), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

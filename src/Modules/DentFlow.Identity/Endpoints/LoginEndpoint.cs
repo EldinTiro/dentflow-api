@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using DentFlow.Application.Common.Http;
 using DentFlow.Application.Common.Interfaces;
 using DentFlow.Domain.Identity;
+using DentFlow.Domain.Tenants;
 using DentFlow.Infrastructure.Persistence;
 
 namespace DentFlow.Identity.Endpoints;
@@ -47,6 +49,13 @@ public class LoginEndpoint(
             return;
         }
 
+        // Checked only after the password, so it does not reveal which emails exist.
+        if (await db.IsTenantSuspendedAsync(user.TenantId, ct))
+        {
+            await this.SendResultErrorsAsync([TenantErrors.Inactive], ct);
+            return;
+        }
+
         var roles = await userManager.GetRolesAsync(user);
 
         var (token, expiresInSeconds) =
@@ -75,7 +84,8 @@ public class LoginEndpoint(
             Email: user.Email!,
             FullName: user.FullName,
             Roles: [.. roles],
-            Language: language
+            Language: language,
+            MustChangePassword: user.MustChangePassword
         ), ct);
     }
 }
@@ -89,5 +99,6 @@ public record LoginResponse(
     string Email,
     string FullName,
     List<string> Roles,
-    string Language);
+    string Language,
+    bool MustChangePassword);
 

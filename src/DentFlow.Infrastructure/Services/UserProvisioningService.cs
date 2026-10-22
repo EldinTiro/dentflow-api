@@ -31,6 +31,8 @@ public class UserProvisioningService(
             IsActive = true,
             EmailConfirmed = true,
             CreatedAt = DateTime.UtcNow,
+            // Every caller hands the password to someone else; it must be replaced.
+            MustChangePassword = true,
         };
 
         var createResult = await userManager.CreateAsync(user, password);

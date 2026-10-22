@@ -1,6 +1,7 @@
 using FastEndpoints;
 using MediatR;
 using DentFlow.Staff.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -18,7 +19,7 @@ public class StaffDeleteAvailabilityEndpoint(ISender sender) : EndpointWithoutRe
     {
         var availabilityId = Route<Guid>("availabilityId");
         var result = await sender.Send(new DeleteStaffAvailabilityCommand(availabilityId), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

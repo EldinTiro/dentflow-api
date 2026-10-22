@@ -232,9 +232,7 @@ public class PatientCreateEndpoint(ISender sender)
 
         if (result.IsError)
         {
-            foreach (var error in result.Errors)
-                AddError(error.Description);   // ← Description only, never Code
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);   // DentFlow.Application.Common.Http
             return;
         }
 
@@ -259,8 +257,8 @@ public record CreatePatientRequest(
 - Always use `Roles(...)` — never use `[Authorize]` attributes.
 - Map `req` → command manually; never pass `req` directly to MediatR.
 - Use `SendCreatedAtAsync` for POST, `SendOkAsync` for GET/PUT, `SendNoContentAsync` for DELETE.
-- **Always call `AddError(error.Description)` for each error before `SendErrorsAsync`** — never pass just `error.Code` as the first argument. FastEndpoints treats dotted strings as property names, discards them, and swaps the arguments if the property doesn't match a request field. Passing only the description avoids this entirely.
-- Never call `SendErrorsAsync` without a preceding `AddError` — doing so sends `errors: []`, which gives the frontend nothing to display.
+- **Answer every `result.IsError` with `await this.SendResultErrorsAsync(result.Errors, ct)`** (`DentFlow.Application.Common.Http`). It sends every error as `{ name: code, reason: description }` and picks the status from the first error's `ErrorType` (Validation 400, NotFound 404, Conflict 409, Unauthorized 401, Forbidden 403, Unexpected 500).
+- Never answer `result.IsError` with a bare `SendErrorsAsync()` — it sends `errors: []` with status 400 (QA-005). `DentFlow.Architecture.Tests` fails the build if you do.
 - New endpoints must be registered in `Program.cs` under `o.Assemblies`.
 
 ---
@@ -289,21 +287,15 @@ Rules for error descriptions:
 ### Propagating Errors in Endpoints
 
 ```csharp
-// ✅ Correct — description reaches the frontend
-if (result.IsError)
-{
-    foreach (var error in result.Errors)
-        AddError(error.Description);
-    await SendErrorsAsync(cancellation: ct);
-    return;
-}
+// ✅ Correct — every description reaches the frontend, status follows the ErrorType
+if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
 
-// ❌ Wrong — AddError(code, description) puts the code into the `reason` field
-foreach (var error in result.Errors)
-    AddError(error.Code, error.Description);
-
-// ❌ Wrong — sends errors: [] with no messages
+// ❌ Wrong — sends errors: [] and always 400 (QA-005); the architecture test rejects it
 if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+
+// ❌ Wrong — loses the status code: NotFound/Conflict come out as 400
+foreach (var error in result.Errors) AddError(error.Description);
+await SendErrorsAsync(cancellation: ct);
 ```
 
 ### FastEndpoints Wire Format

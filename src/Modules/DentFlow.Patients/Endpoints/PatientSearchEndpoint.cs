@@ -1,6 +1,7 @@
 using FastEndpoints;
 using MediatR;
 using DentFlow.Patients.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -21,7 +22,7 @@ public class PatientSearchEndpoint(ISender sender)
         var limit = Query<int?>("limit", isRequired: false) ?? 20;
 
         var result = await sender.Send(new SearchPatientsQuery(q, limit), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

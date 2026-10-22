@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Domain.Identity;
 using DentFlow.Identity.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -35,8 +36,8 @@ public class UpdateTenantUserStatusEndpoint(ISender sender, UserManager<Applicat
             return;
         }
 
-        var result = await sender.Send(new UpdateUserStatusCommand(targetId, req.IsActive), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        var result = await sender.Send(new UpdateUserStatusCommand(targetId, req.IsActive, this.Actor()), ct);
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

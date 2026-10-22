@@ -115,15 +115,16 @@ public class AddLineItemCommandHandler(IInvoiceRepository repo)
     {
         var invoice = await repo.GetByIdWithDetailsAsync(cmd.InvoiceId, ct);
         if (invoice is null) return BillingErrors.InvoiceNotFound;
-        if (invoice.Status == InvoiceStatus.Void) return BillingErrors.CannotModifyVoidedInvoice;
 
         var item = InvoiceLineItem.Create(
             invoice.Id, cmd.Description, cmd.CdtCode,
             cmd.ToothNumber, cmd.Quantity, cmd.UnitFee, cmd.TreatmentPlanItemId);
-        await repo.AddLineItemAsync(item, ct);
+        var added = invoice.AddLineItem(item);
+        if (added.IsError) return added.Errors;
 
-        var updated = await repo.GetByIdWithDetailsAsync(invoice.Id, ct);
-        return InvoiceResponse.FromEntity(updated!);
+        // Saves the new row and the invoice's recalculated status together.
+        await repo.AddLineItemAsync(item, ct);
+        return InvoiceResponse.FromEntity(invoice);
     }
 }
 
@@ -157,14 +158,15 @@ public class UpdateLineItemCommandHandler(IInvoiceRepository repo)
     {
         var invoice = await repo.GetByIdWithDetailsAsync(cmd.InvoiceId, ct);
         if (invoice is null) return BillingErrors.InvoiceNotFound;
-        if (invoice.Status == InvoiceStatus.Void) return BillingErrors.CannotModifyVoidedInvoice;
 
-        var item = await repo.GetLineItemByIdAsync(cmd.LineItemId, ct);
+        var item = invoice.LineItems.FirstOrDefault(li => li.Id == cmd.LineItemId);
         if (item is null) return BillingErrors.LineItemNotFound;
 
-        item.Update(cmd.Description, cmd.CdtCode, cmd.ToothNumber, cmd.Quantity, cmd.UnitFee);
-        var updated = await repo.GetByIdWithDetailsAsync(invoice.Id, ct);
-        return InvoiceResponse.FromEntity(updated!);
+        var updated = invoice.UpdateLineItem(item, cmd.Description, cmd.CdtCode, cmd.ToothNumber, cmd.Quantity, cmd.UnitFee);
+        if (updated.IsError) return updated.Errors;
+
+        await repo.UpdateAsync(invoice, ct);
+        return InvoiceResponse.FromEntity(invoice);
     }
 }
 
@@ -191,11 +193,14 @@ public class DeleteLineItemCommandHandler(IInvoiceRepository repo)
     {
         var invoice = await repo.GetByIdWithDetailsAsync(cmd.InvoiceId, ct);
         if (invoice is null) return BillingErrors.InvoiceNotFound;
-        if (invoice.Status == InvoiceStatus.Void) return BillingErrors.CannotModifyVoidedInvoice;
 
-        var item = await repo.GetLineItemByIdAsync(cmd.LineItemId, ct);
+        var item = invoice.LineItems.FirstOrDefault(li => li.Id == cmd.LineItemId);
         if (item is null) return BillingErrors.LineItemNotFound;
 
+        var removed = invoice.RemoveLineItem(item);
+        if (removed.IsError) return removed.Errors;
+
+        // Soft-deletes the row and saves the invoice's recalculated status together.
         await repo.RemoveLineItemAsync(item, ct);
         return Result.Success;
     }
@@ -247,12 +252,12 @@ public class RecordPaymentCommandHandler(IInvoiceRepository repo)
         var method = Enum.Parse<PaymentMethod>(cmd.Method, ignoreCase: true);
         var payment = InvoicePayment.Create(invoice.Id, cmd.Amount, method, cmd.PaidAt, cmd.Reference, cmd.Notes);
 
-        await repo.AddPaymentAsync(payment, ct);
+        // Aggregate first, then persist. The other way round, EF's relationship fix-up
+        // had already put the tracked payment into Payments, AddPayment added it again,
+        // and a partial payment was stored as Paid.
         invoice.AddPayment(payment);
-        await repo.UpdateAsync(invoice, ct);
-
-        var updated = await repo.GetByIdWithDetailsAsync(invoice.Id, ct);
-        return InvoiceResponse.FromEntity(updated!);
+        await repo.AddPaymentAsync(payment, ct);
+        return InvoiceResponse.FromEntity(invoice);
     }
 }
 
@@ -268,6 +273,9 @@ public class RecordPaymentCommandValidator : AbstractValidator<RecordPaymentComm
             .NotEmpty()
             .Must(v => AllowedMethods.Contains(v, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Method must be one of: {string.Join(", ", AllowedMethods)}.");
-        RuleFor(x => x.PaidAt).LessThanOrEqualTo(DateTime.UtcNow.AddMinutes(5));
+        // Evaluated per validation, with a little slack for client clock skew.
+        RuleFor(x => x.PaidAt)
+            .Must(paidAt => paidAt <= DateTime.UtcNow.AddMinutes(5))
+            .WithMessage("Payment date cannot be in the future.");
     }
 }

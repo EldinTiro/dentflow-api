@@ -3,6 +3,7 @@ using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Tenants.Application;
 using DentFlow.Tenants.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Tenants.Endpoints;
 
@@ -28,7 +29,7 @@ public class TenantListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRe
         if (pageSize > 100) pageSize = 100;
 
         var result = await sender.Send(new ListTenantsQuery(searchTerm, isActive, page, pageSize), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Identity.Application.Commands;
 using DentFlow.Identity.Application.Queries;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -13,7 +14,8 @@ public class GetUserProfileEndpoint(ISender sender) : EndpointWithoutRequest<Use
     public override void Configure()
     {
         Get("/users/me");
-        Roles(DomainRoles.SuperAdmin, DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin, DomainRoles.Dentist, DomainRoles.Receptionist);
+        // Every role has a profile; Hygienist, BillingStaff and ReadOnly used to get 403.
+        Roles([.. DomainRoles.All]);
         Version(1);
         Summary(s => s.Summary = "Get current user's profile");
     }
@@ -28,7 +30,35 @@ public class GetUserProfileEndpoint(ISender sender) : EndpointWithoutRequest<Use
         }
 
         var result = await sender.Send(new GetUserProfileQuery(userId), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
+        await SendOkAsync(result.Value, ct);
+    }
+}
+
+// ── PUT /users/me ──────────────────────────────────────────────────────────
+
+public record UpdateOwnProfileRequest(string FirstName, string LastName);
+
+public class UpdateOwnProfileEndpoint(ISender sender) : Endpoint<UpdateOwnProfileRequest, UserProfileResult>
+{
+    public override void Configure()
+    {
+        Put("/users/me");
+        Roles([.. DomainRoles.All]);
+        Version(1);
+        Summary(s => s.Summary = "Update the current user's name");
+    }
+
+    public override async Task HandleAsync(UpdateOwnProfileRequest req, CancellationToken ct)
+    {
+        if (!Guid.TryParse(HttpContext.User.FindFirst("sub")?.Value, out var userId))
+        {
+            await SendForbiddenAsync(ct);
+            return;
+        }
+
+        var result = await sender.Send(new UpdateOwnProfileCommand(userId, req.FirstName, req.LastName), ct);
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -40,7 +70,8 @@ public class GetUserPreferencesEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Get("/users/me/preferences");
-        Roles(DomainRoles.SuperAdmin, DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin, DomainRoles.Dentist, DomainRoles.Receptionist);
+        // Every role has a profile; Hygienist, BillingStaff and ReadOnly used to get 403.
+        Roles([.. DomainRoles.All]);
         Version(1);
         Summary(s => s.Summary = "Get current user's preferences");
     }
@@ -55,7 +86,7 @@ public class GetUserPreferencesEndpoint(ISender sender) : EndpointWithoutRequest
         }
 
         var result = await sender.Send(new GetUserPreferencesQuery(userId), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -75,7 +106,8 @@ public class UpsertUserPreferencesEndpoint(ISender sender) : Endpoint<UpsertUser
     public override void Configure()
     {
         Put("/users/me/preferences");
-        Roles(DomainRoles.SuperAdmin, DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin, DomainRoles.Dentist, DomainRoles.Receptionist);
+        // Every role has a profile; Hygienist, BillingStaff and ReadOnly used to get 403.
+        Roles([.. DomainRoles.All]);
         Version(1);
         Summary(s => s.Summary = "Update current user's preferences");
     }
@@ -97,7 +129,7 @@ public class UpsertUserPreferencesEndpoint(ISender sender) : Endpoint<UpsertUser
             req.DefaultCalendarView);
 
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }
@@ -115,7 +147,8 @@ public class ChangePasswordEndpoint(ISender sender) : Endpoint<ChangePasswordReq
     public override void Configure()
     {
         Post("/users/me/change-password");
-        Roles(DomainRoles.SuperAdmin, DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin, DomainRoles.Dentist, DomainRoles.Receptionist);
+        // Every role: a user forced to replace a temporary password must be able to (QA-011).
+        Roles([.. DomainRoles.All]);
         Version(1);
         Summary(s => s.Summary = "Change current user's password");
     }
@@ -131,7 +164,7 @@ public class ChangePasswordEndpoint(ISender sender) : Endpoint<ChangePasswordReq
 
         var command = new ChangePasswordCommand(userId, req.CurrentPassword, req.NewPassword);
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

@@ -1,5 +1,3 @@
-using Finbuckle.MultiTenant;
-using Finbuckle.MultiTenant.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using DentFlow.Application.Common;
 using DentFlow.Application.Common.Interfaces;
@@ -10,16 +8,15 @@ using DentFlow.Patients.Domain;
 
 namespace DentFlow.Infrastructure.Services;
 
-internal sealed class DashboardService(
-    ApplicationDbContext db,
-    IMultiTenantContextAccessor multiTenantContextAccessor) : IDashboardService
+/// <summary>
+/// Tenant scoping and soft-delete exclusion come from the global query filters. This
+/// used to bypass them and filter by a tenant id parsed from the slug, which never
+/// parsed — every clinic's dashboard read zeros (QA-003).
+/// </summary>
+internal sealed class DashboardService(ApplicationDbContext db) : IDashboardService
 {
     public async Task<DashboardStatsResponse> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        var tenantId = Guid.TryParse(
-            multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Identifier,
-            out var tid) ? tid : Guid.Empty;
-
         var now   = DateTime.UtcNow;
         var today = DateTime.SpecifyKind(now.Date, DateTimeKind.Utc);
 
@@ -38,24 +35,21 @@ internal sealed class DashboardService(
 
         // ── Revenue this month ──────────────────────────────────────────────
         var revenueThisMonth = await db.Set<InvoicePayment>()
-            .IgnoreQueryFilters()
-            .Where(p => p.TenantId == tenantId && p.PaidAt >= monthStart)
+            .Where(p => p.PaidAt >= monthStart)
             .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
 
         // ── Outstanding balance (all non-void invoices) ─────────────────────
         // SubTotal - PaidAmount for each invoice
         var invoiceTotals = await db.Set<Invoice>()
-            .IgnoreQueryFilters()
-            .Where(i => i.TenantId == tenantId &&
-                        i.Status != InvoiceStatus.Void &&
+            .Where(i => i.Status != InvoiceStatus.Void &&
                         i.Status != InvoiceStatus.Paid)
             .Select(i => new
             {
-                SubTotal  = db.Set<InvoiceLineItem>().IgnoreQueryFilters()
-                              .Where(li => li.TenantId == tenantId && li.InvoiceId == i.Id)
+                SubTotal  = db.Set<InvoiceLineItem>()
+                              .Where(li => li.InvoiceId == i.Id)
                               .Sum(li => (decimal?)(li.Quantity * li.UnitFee)) ?? 0m,
-                PaidAmount = db.Set<InvoicePayment>().IgnoreQueryFilters()
-                              .Where(p => p.TenantId == tenantId && p.InvoiceId == i.Id)
+                PaidAmount = db.Set<InvoicePayment>()
+                              .Where(p => p.InvoiceId == i.Id)
                               .Sum(p => (decimal?)p.Amount) ?? 0m
             })
             .ToListAsync(cancellationToken);
@@ -64,35 +58,27 @@ internal sealed class DashboardService(
 
         // ── New patients this month ─────────────────────────────────────────
         var newPatientsThisMonth = await db.Set<Patient>()
-            .IgnoreQueryFilters()
-            .CountAsync(p => p.TenantId == tenantId &&
-                             p.FirstVisitDate != null &&
+            .CountAsync(p => p.FirstVisitDate != null &&
                              p.FirstVisitDate >= DateOnly.FromDateTime(monthStart),
                         cancellationToken);
 
         // ── Appointments completed this week ────────────────────────────────
         var completedThisWeek = await db.Set<Appointment>()
-            .IgnoreQueryFilters()
-            .CountAsync(a => a.TenantId == tenantId &&
-                             a.Status == AppointmentStatus.Completed &&
+            .CountAsync(a => a.Status == AppointmentStatus.Completed &&
                              a.StartAt >= thisWeekStart &&
                              a.StartAt < thisWeekStart.AddDays(7),
                         cancellationToken);
 
         // ── Appointments completed last week ────────────────────────────────
         var completedLastWeek = await db.Set<Appointment>()
-            .IgnoreQueryFilters()
-            .CountAsync(a => a.TenantId == tenantId &&
-                             a.Status == AppointmentStatus.Completed &&
+            .CountAsync(a => a.Status == AppointmentStatus.Completed &&
                              a.StartAt >= lastWeekStart &&
                              a.StartAt < lastWeekEnd,
                         cancellationToken);
 
         // ── Recall due soon (next 30 days) ──────────────────────────────────
         var recallDueSoon = await db.Set<Patient>()
-            .IgnoreQueryFilters()
-            .CountAsync(p => p.TenantId == tenantId &&
-                             p.Status == PatientStatus.Active &&
+            .CountAsync(p => p.Status == PatientStatus.Active &&
                              p.RecallDueDate != null &&
                              p.RecallDueDate >= todayOnly &&
                              p.RecallDueDate <= thirtyDaysLater,
@@ -100,9 +86,7 @@ internal sealed class DashboardService(
 
         // ── Recall overdue ──────────────────────────────────────────────────
         var recallOverdue = await db.Set<Patient>()
-            .IgnoreQueryFilters()
-            .CountAsync(p => p.TenantId == tenantId &&
-                             p.Status == PatientStatus.Active &&
+            .CountAsync(p => p.Status == PatientStatus.Active &&
                              p.RecallDueDate != null &&
                              p.RecallDueDate < todayOnly,
                         cancellationToken);

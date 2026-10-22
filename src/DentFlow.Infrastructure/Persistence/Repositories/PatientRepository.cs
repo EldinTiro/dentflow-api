@@ -26,14 +26,7 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
         var query = dbContext.Set<Patient>().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var term = searchTerm.ToLower();
-            query = query.Where(p =>
-                p.FirstName.ToLower().Contains(term) ||
-                p.LastName.ToLower().Contains(term) ||
-                (p.Email != null && p.Email.ToLower().Contains(term)) ||
-                p.PatientNumber.ToLower().Contains(term));
-        }
+            query = ApplySearch(query, searchTerm);
 
         if (status.HasValue) query = query.Where(p => p.Status == status.Value);
 
@@ -54,6 +47,50 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
         return (items, total);
     }
+
+    /// <summary>
+    /// QA-015. A query without letters is a phone number (or patient number): digits
+    /// are compared ignoring "+", spaces and a leading trunk 0, so "+38761542",
+    /// "061542" and "61 542" all find +38761542123. Otherwise every word must match a
+    /// name, the email or the patient number — "Selma Aganović" narrows rather than
+    /// widens — and names compare with Bosnian diacritics folded (č ć → c, š → s,
+    /// ž → z, đ/dj → d), because people search for "aganovic".
+    /// </summary>
+    private static IQueryable<Patient> ApplySearch(IQueryable<Patient> query, string searchTerm)
+    {
+        var raw = searchTerm.Trim();
+
+        if (!raw.Any(char.IsLetter))
+        {
+            var digits = new string(raw.Where(char.IsDigit).ToArray()).TrimStart('0');
+            if (digits.Length == 0) return query.Where(p => p.PatientNumber.Contains(raw));
+
+            return query.Where(p =>
+                p.PatientNumber.Contains(raw) ||
+                (p.PhoneMobile != null && p.PhoneMobile.Replace("+", "").Replace(" ", "").Contains(digits)) ||
+                (p.PhoneHome != null && p.PhoneHome.Replace("+", "").Replace(" ", "").Contains(digits)) ||
+                (p.PhoneWork != null && p.PhoneWork.Replace("+", "").Replace(" ", "").Contains(digits)));
+        }
+
+        foreach (var word in raw.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var plain = Fold(word);
+            var lower = word.ToLowerInvariant();
+            query = query.Where(p =>
+                p.FirstName.ToLower().Replace("dj", "d").Replace("č", "c").Replace("ć", "c").Replace("š", "s").Replace("ž", "z").Replace("đ", "d").Contains(plain) ||
+                p.LastName.ToLower().Replace("dj", "d").Replace("č", "c").Replace("ć", "c").Replace("š", "s").Replace("ž", "z").Replace("đ", "d").Contains(plain) ||
+                (p.PreferredName != null && p.PreferredName.ToLower().Replace("dj", "d").Replace("č", "c").Replace("ć", "c").Replace("š", "s").Replace("ž", "z").Replace("đ", "d").Contains(plain)) ||
+                (p.Email != null && p.Email.ToLower().Contains(lower)) ||
+                p.PatientNumber.ToLower().Contains(lower));
+        }
+
+        return query;
+    }
+
+    private static string Fold(string word) =>
+        word.ToLowerInvariant()
+            .Replace("dj", "d")
+            .Replace('č', 'c').Replace('ć', 'c').Replace('š', 's').Replace('ž', 'z').Replace('đ', 'd');
 
     public async Task<string> GeneratePatientNumberAsync(CancellationToken cancellationToken = default)
     {

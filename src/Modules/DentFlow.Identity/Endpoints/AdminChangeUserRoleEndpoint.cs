@@ -2,6 +2,7 @@
 using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Identity.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Identity.Endpoints;
 
@@ -18,8 +19,8 @@ public class AdminChangeUserRoleEndpoint(ISender sender) : Endpoint<ChangeUserRo
     public override async Task HandleAsync(ChangeUserRoleRequest req, CancellationToken ct)
     {
         var id = Route<Guid>("id");
-        var result = await sender.Send(new ChangeUserRoleCommand(id, req.Role), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        var result = await sender.Send(new ChangeUserRoleCommand(id, req.Role, this.Actor()), ct);
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

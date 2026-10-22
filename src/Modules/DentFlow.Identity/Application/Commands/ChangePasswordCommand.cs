@@ -27,6 +27,12 @@ public class ChangePasswordCommandHandler(UserManager<ApplicationUser> userManag
                 .Select(e => Error.Validation(e.Code, e.Description))
                 .ToList();
 
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await userManager.UpdateAsync(user);
+        }
+
         return Result.Updated;
     }
 }

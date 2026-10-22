@@ -82,10 +82,12 @@ public static class InvoiceSeeder
             {
                 if (rng.Next(10) >= 7) continue; // skip 30%
 
-                var invoiceNumber = $"INV-{invoiceSeq:D5}";
+                // Same scheme as CreateInvoiceCommandHandler (QA-025).
+                var invoiceNumber = $"INV-{DateTime.UtcNow:yyyyMMdd}-{invoiceSeq:D4}";
                 invoiceSeq++;
 
-                var dueDate = appt.StartAt.AddDays(30);
+                // Issued now (Invoice.Create), so due 30 days from now — not before the issue date.
+                var dueDate = DateTime.UtcNow.AddDays(30);
                 var invoice = Invoice.Create(appt.PatientId, invoiceNumber, dueDate, null);
                 invoice.SetTenant(tenantId);
 

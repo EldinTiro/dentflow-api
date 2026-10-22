@@ -4,6 +4,7 @@ using System.Security.Claims;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Tenants.Application;
 using DentFlow.Tenants.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Tenants.Endpoints;
 
@@ -41,8 +42,7 @@ public class ClinicSettingsUpdateEndpoint(ISender sender) : Endpoint<UpdateClini
 
         if (result.IsError)
         {
-            foreach (var e in result.Errors) AddError(e.Description);
-            await SendErrorsAsync(cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
 

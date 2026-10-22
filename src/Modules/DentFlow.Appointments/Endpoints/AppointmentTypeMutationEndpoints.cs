@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Appointments.Endpoints;
 
@@ -47,7 +48,7 @@ public class AppointmentTypeCreateEndpoint(ISender sender)
             req.DefaultFee);
 
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendCreatedAtAsync<AppointmentTypeListEndpoint>(null, result.Value, cancellation: ct);
     }
 }
@@ -76,7 +77,7 @@ public class AppointmentTypeUpdateEndpoint(ISender sender)
             req.DefaultFee);
 
         var result = await sender.Send(command, ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }
@@ -96,7 +97,7 @@ public class AppointmentTypeDeleteEndpoint(ISender sender)
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new DeleteAppointmentTypeCommand(id), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }
 }

@@ -22,6 +22,11 @@ public class RescheduleAppointmentCommandHandler(
         if (appointment is null)
             return AppointmentErrors.NotFound;
 
+        // Reschedule resets the status to Scheduled, so on a started or finished visit
+        // it would silently rewrite clinical history.
+        if (!AppointmentStatus.CanReschedule(appointment.Status))
+            return AppointmentErrors.CannotReschedule;
+
         var isBlocked = await blockedTimeChecker.IsProviderBlockedAsync(
             appointment.ProviderId, command.NewStartAt, command.NewEndAt, cancellationToken);
         if (isBlocked)

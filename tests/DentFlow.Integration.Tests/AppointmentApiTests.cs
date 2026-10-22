@@ -122,7 +122,7 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
     }
 
     [Fact]
-    public async Task StatusTransition_Completed_To_Cancelled_Returns400()
+    public async Task StatusTransition_Completed_To_Cancelled_Returns409()
     {
         // Cannot transition from a terminal state
         var apptId = await CreateBookedAppointment();
@@ -134,11 +134,11 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         var response = await _admin.PatchAsJsonAsync($"/api/v1/appointments/{apptId}/status",
             new { status = "Cancelled" });
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
-    public async Task StatusTransition_Scheduled_To_Completed_Returns400()
+    public async Task StatusTransition_Scheduled_To_Completed_Returns409()
     {
         // Cannot jump from Scheduled directly to Completed — must go through InProgress
         var apptId = await CreateBookedAppointment();
@@ -146,7 +146,7 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         var response = await _admin.PatchAsJsonAsync($"/api/v1/appointments/{apptId}/status",
             new { status = "Completed" });
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -238,6 +238,34 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         var type = await typeResp.Content.ReadFromJsonAsync<AppointmentTypeDto>();
 
         return (patient!.Id, staff!.Id, type!.Id);
+    }
+
+    // QA-034: Reschedule had no status check; it even reset a finished visit to Scheduled
+    [Fact]
+    public async Task Reschedule_InProgressAppointment_Returns409()
+    {
+        var apptId = await CreateBookedAppointment();
+        (await _admin.PatchAsJsonAsync($"/api/v1/appointments/{apptId}/status", new { status = "InProgress" }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await _admin.PutAsJsonAsync($"/api/v1/appointments/{apptId}/reschedule", new
+        {
+            newStartAt = DateTime.UtcNow.AddDays(9).ToString("o"),
+            newEndAt = DateTime.UtcNow.AddDays(9).AddHours(1).ToString("o"),
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Cancel_InProgressAppointment_Returns409()
+    {
+        var apptId = await CreateBookedAppointment();
+        await _admin.PatchAsJsonAsync($"/api/v1/appointments/{apptId}/status", new { status = "InProgress" });
+
+        var response = await _admin.PostAsJsonAsync($"/api/v1/appointments/{apptId}/cancel", new { reason = "x" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     private async Task<Guid> CreateBookedAppointment()

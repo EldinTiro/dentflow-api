@@ -2,6 +2,7 @@
 using MediatR;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Appointments.Endpoints;
 
@@ -25,15 +26,7 @@ public class AppointmentBookEndpoint(ISender sender) : Endpoint<BookAppointmentR
         var result = await sender.Send(command, ct);
         if (result.IsError)
         {
-            foreach (var error in result.Errors)
-                AddError(error.Description);
-            var statusCode = result.FirstError.Type switch
-            {
-                ErrorOr.ErrorType.Conflict => 409,
-                ErrorOr.ErrorType.Validation => 400,
-                _ => 400
-            };
-            await SendErrorsAsync(statusCode: statusCode, cancellation: ct);
+            await this.SendResultErrorsAsync(result.Errors, ct);
             return;
         }
         await SendCreatedAtAsync<AppointmentGetByIdEndpoint>(new { id = result.Value.Id }, result.Value, cancellation: ct);

@@ -3,6 +3,7 @@ using MediatR;
 using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Tenants.Application;
 using DentFlow.Tenants.Application.Commands;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Tenants.Endpoints;
 
@@ -20,7 +21,7 @@ public class TenantUpdatePlanEndpoint(ISender sender) : Endpoint<UpdateTenantPla
     {
         var id = Route<Guid>("id");
         var result = await sender.Send(new UpdateTenantPlanCommand(id, req.Plan, req.ExpiresAt), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

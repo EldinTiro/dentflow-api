@@ -25,6 +25,9 @@ public static class AppointmentErrors
     public static Error InvalidTransition(string from, string to) =>
         Error.Conflict("Appointment.InvalidTransition", $"Cannot transition from '{from}' to '{to}'.");
 
+    public static readonly Error CannotReschedule =
+        Error.Conflict("Appointment.CannotReschedule", "Only an appointment that has not started yet can be rescheduled.");
+
     public static readonly Error AlreadyTerminal =
         Error.Conflict("Appointment.AlreadyTerminal", "This appointment is in a terminal state and cannot be changed.");
 }

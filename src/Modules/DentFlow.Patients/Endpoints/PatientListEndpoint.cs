@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Patients.Domain;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -31,7 +32,7 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
             : null;
 
         var result = await sender.Send(new ListPatientsQuery(search, status, recallFilter, page, pageSize), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

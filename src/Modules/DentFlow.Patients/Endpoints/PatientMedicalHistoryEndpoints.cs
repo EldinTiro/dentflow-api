@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Patients.Application.Queries;
+using DentFlow.Application.Common.Http;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -20,7 +21,7 @@ public class GetMedicalHistoryEndpoint(ISender sender)
     {
         var patientId = Route<Guid>("patientId");
         var result = await sender.Send(new GetMedicalHistoryQuery(patientId), ct);
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         if (result.Value is null) { await SendNoContentAsync(ct); return; }
         await SendOkAsync(result.Value, ct);
     }
@@ -76,7 +77,7 @@ public class UpsertMedicalHistoryEndpoint(ISender sender)
             req.PhysicianName,
             req.PhysicianPhone), ct);
 
-        if (result.IsError) { await SendErrorsAsync(cancellation: ct); return; }
+        if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
 }

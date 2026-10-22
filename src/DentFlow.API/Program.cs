@@ -183,6 +183,8 @@ app.UseRequestLocalization();
 // which does not exist until UseAuthentication has run.
 app.UseAuthentication();
 app.UseMultiTenant();
+app.UseMiddleware<DentFlow.API.Middleware.SuspendedTenantMiddleware>();
+app.UseMiddleware<DentFlow.API.Middleware.PasswordChangeRequiredMiddleware>();
 app.UseAuthorization();
 
 app.UseFastEndpoints(c =>
