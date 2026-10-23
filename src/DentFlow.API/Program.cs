@@ -37,6 +37,8 @@ builder.Services.AddApplication(
 );
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddNotificationsModule();
+// Account lifecycle for other modules; lives in Identity next to the user-management guards.
+builder.Services.AddScoped<DentFlow.Application.Common.Interfaces.IUserAccountLifecycle, DentFlow.Identity.Application.UserAccountLifecycle>();
 
 // Hangfire — skip in Testing environment (Testcontainers don't expose a pg port to Hangfire)
 if (!builder.Environment.IsEnvironment("Testing"))

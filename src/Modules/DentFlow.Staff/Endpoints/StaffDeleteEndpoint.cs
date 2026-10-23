@@ -19,7 +19,7 @@ public class StaffDeleteEndpoint(ISender sender) : EndpointWithoutRequest
     public override async Task HandleAsync(CancellationToken ct)
     {
         var id = Route<Guid>("id");
-        var result = await sender.Send(new DeleteStaffMemberCommand(id), ct);
+        var result = await sender.Send(new DeleteStaffMemberCommand(id, this.AccountActor()), ct);
         if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendNoContentAsync(ct);
     }

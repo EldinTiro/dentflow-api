@@ -1,4 +1,5 @@
-﻿﻿using FluentAssertions;
+﻿using ErrorOr;
+﻿using FluentAssertions;
 using NSubstitute;
 using DentFlow.Application.Common.Interfaces;
 using DentFlow.Staff.Application.Commands;
@@ -82,11 +83,66 @@ public class GetStaffMemberByIdQueryHandlerTests
 public class DeleteStaffMemberCommandHandlerTests
 {
     private readonly IStaffRepository _repo = Substitute.For<IStaffRepository>();
+    private readonly IUserAccountLifecycle _accounts = Substitute.For<IUserAccountLifecycle>();
+    private readonly DentFlow.Staff.Tests.Support.PassThroughTransactionRunner _transaction = new();
     private readonly DeleteStaffMemberCommandHandler _sut;
+    private static readonly AccountActor Owner = new(Guid.NewGuid(), ["ClinicOwner"]);
 
     public DeleteStaffMemberCommandHandlerTests()
     {
-        _sut = new DeleteStaffMemberCommandHandler(_repo);
+        _sut = new DeleteStaffMemberCommandHandler(_repo, _accounts, _transaction);
+        _accounts.DeactivateAsync(default, default!, default).ReturnsForAnyArgs(Result.Success);
+    }
+
+    private static DeleteStaffMemberCommand Delete(Guid id) => new(id, Owner);
+
+    private StaffMember LinkedProfile(Guid userId)
+    {
+        var staff = StaffMember.Create(StaffType.Dentist, "Ana", "Linked", "ana@c.com", null, null);
+        staff.LinkUser(userId);
+        _repo.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
+        return staff;
+    }
+
+    // ── People-merge plan 2.6 (D4): the account follows the profile ──
+
+    [Fact]
+    public async Task Handle_LinkedProfile_DeactivatesTheAccount_InTheSameTransaction()
+    {
+        var userId = Guid.NewGuid();
+        var staff = LinkedProfile(userId);
+
+        var result = await _sut.Handle(Delete(staff.Id), CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        await _accounts.Received(1).DeactivateAsync(userId, Owner, Arg.Any<CancellationToken>());
+        await _repo.Received(1).SoftDeleteAsync(staff, Arg.Any<CancellationToken>());
+        _transaction.Calls.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData("User.Self")]
+    [InlineData("User.LastClinicOwner")]
+    public async Task Handle_WhenTheAccountGuardRefuses_ReturnsItsError_AndDeletesNothing(string code)
+    {
+        var staff = LinkedProfile(Guid.NewGuid());
+        _accounts.DeactivateAsync(default, default!, default).ReturnsForAnyArgs(Error.Conflict(code, "no"));
+
+        var result = await _sut.Handle(Delete(staff.Id), CancellationToken.None);
+
+        result.FirstError.Code.Should().Be(code);
+        await _repo.DidNotReceiveWithAnyArgs().SoftDeleteAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task Handle_UnlinkedProfile_LeavesAccountsAlone()
+    {
+        var staff = StaffMember.Create(StaffType.Receptionist, "Jane", "Doe", null, null, null);
+        _repo.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
+
+        await _sut.Handle(Delete(staff.Id), CancellationToken.None);
+
+        await _accounts.DidNotReceiveWithAnyArgs().DeactivateAsync(default, default!, default);
     }
 
     [Fact]
@@ -97,7 +153,7 @@ public class DeleteStaffMemberCommandHandlerTests
         _repo.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
 
         // Act
-        var result = await _sut.Handle(new DeleteStaffMemberCommand(staff.Id), CancellationToken.None);
+        var result = await _sut.Handle(Delete(staff.Id), CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeFalse();
@@ -112,7 +168,7 @@ public class DeleteStaffMemberCommandHandlerTests
         _repo.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((StaffMember?)null);
 
         // Act
-        var result = await _sut.Handle(new DeleteStaffMemberCommand(id), CancellationToken.None);
+        var result = await _sut.Handle(Delete(id), CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
