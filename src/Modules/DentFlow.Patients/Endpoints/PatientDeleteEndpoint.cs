@@ -13,7 +13,7 @@ public class PatientDeleteEndpoint(ISender sender) : EndpointWithoutRequest
         Delete("/patients/{id}");
         Policies(Permission.PatientsManage);
         Version(1);
-        Summary(s => s.Summary = "Soft-delete a patient");
+        Summary(s => s.Summary = "Soft-delete a duplicate patient; 409 Patient.HasHistory once there is anything to keep");
     }
 
     public override async Task HandleAsync(CancellationToken ct)

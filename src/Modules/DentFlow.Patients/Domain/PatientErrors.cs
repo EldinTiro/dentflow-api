@@ -26,6 +26,9 @@ public static class PatientErrors
             $"This patient has {count} upcoming appointment(s). Cancel or reschedule them first.",
             new Dictionary<string, object> { ["count"] = count });
 
+    public static readonly Error HasHistory =
+        Error.Conflict("Patient.HasHistory", "This patient has appointments, treatment plans, invoices or documents. Deactivate them instead.");
+
     public static readonly Error InvalidStatus =
         Error.Validation("Patient.InvalidStatus", "The provided patient status is not valid.");
 }
