@@ -19,6 +19,13 @@ public static class PatientErrors
     public static readonly Error AlreadyActive =
         Error.Conflict("Patient.AlreadyActive", "This patient is already active.");
 
+    /// <summary>The count travels as metadata so the client can say how many (D10).</summary>
+    public static Error HasUpcomingAppointments(int count) =>
+        Error.Conflict(
+            "Patient.HasUpcomingAppointments",
+            $"This patient has {count} upcoming appointment(s). Cancel or reschedule them first.",
+            new Dictionary<string, object> { ["count"] = count });
+
     public static readonly Error InvalidStatus =
         Error.Validation("Patient.InvalidStatus", "The provided patient status is not valid.");
 }
