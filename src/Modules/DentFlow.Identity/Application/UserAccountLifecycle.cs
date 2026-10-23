@@ -28,4 +28,18 @@ public sealed class UserAccountLifecycle(UserManager<ApplicationUser> userManage
 
         return Result.Success;
     }
+
+    public async Task<ErrorOr<Success>> RenameAsync(Guid userId, string firstName, string lastName, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null) return Result.Success;
+
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            return result.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
+
+        return Result.Success;
+    }
 }

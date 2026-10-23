@@ -86,6 +86,13 @@ public class StaffMember : TenantAuditableEntity
         SetUpdated();
     }
 
+    public void Rename(string firstName, string lastName)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        SetUpdated();
+    }
+
     public void Deactivate()
     {
         IsActive = false;

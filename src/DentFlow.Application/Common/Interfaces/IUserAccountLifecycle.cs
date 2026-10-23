@@ -14,4 +14,7 @@ public interface IUserAccountLifecycle
 {
     /// <summary>Deactivate (never delete) an account. Missing accounts are a no-op.</summary>
     Task<ErrorOr<Success>> DeactivateAsync(Guid userId, AccountActor actor, CancellationToken ct);
+
+    /// <summary>Keep the account's name equal to its staff profile's (D6). Missing accounts are a no-op.</summary>
+    Task<ErrorOr<Success>> RenameAsync(Guid userId, string firstName, string lastName, CancellationToken ct);
 }

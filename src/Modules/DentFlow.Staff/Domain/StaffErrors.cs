@@ -33,6 +33,9 @@ public static class StaffErrors
     public static readonly Error EmailRequiredForAccess =
         Error.Validation("Staff.EmailRequiredForAccess", "An email address is needed to sign in. Add one to the profile first.");
 
+    public static readonly Error EmailLockedByAccess =
+        Error.Validation("Staff.EmailLockedByAccess", "This email is the person's sign-in email and can't be changed here.");
+
     public static readonly Error InvalidAccessRole =
         Error.Validation("Staff.InvalidAccessRole", "Choose one of the clinic roles: owner, dentist, dental nurse or receptionist.");
 

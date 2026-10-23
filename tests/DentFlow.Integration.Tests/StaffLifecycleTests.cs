@@ -77,4 +77,50 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
         (await owner.GetAsync($"/api/v1/staff/{ownerStaffId}")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await LoginAsync(slug, ownerEmail)).StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    // ── 2.7 (D6): one name for profile and account ──────────────────────
+
+    private record NameDto(string FirstName, string LastName, string FullName);
+
+    [Fact]
+    public async Task UpdateOwnName_AlsoRenamesLinkedStaffProfile()
+    {
+        var (slug, tenantId) = await ClinicAsync();
+        var (_, staffId, email) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var dentist = await SignedInAsync(slug, email);
+
+        (await dentist.PutAsJsonAsync("/api/v1/users/me", new { firstName = "Amra", lastName = "Hadžić" }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await dentist.GetFromJsonAsync<NameDto>($"/api/v1/staff/{staffId}"))!.FullName.Should().Be("Amra Hadžić");
+    }
+
+    [Fact]
+    public async Task EditingALinkedProfilesName_RenamesTheAccount()
+    {
+        var (slug, tenantId) = await ClinicAsync();
+        var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
+        var (_, staffId, email) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var owner = await SignedInAsync(slug, ownerEmail);
+
+        (await owner.PutAsJsonAsync($"/api/v1/staff/{staffId}", new { firstName = "Lejla", lastName = "Kovač", email }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dentist = await SignedInAsync(slug, email);
+        (await dentist.GetFromJsonAsync<NameDto>("/api/v1/users/me"))!.FullName.Should().Be("Lejla Kovač");
+    }
+
+    [Fact]
+    public async Task ChangingALinkedProfilesEmail_Returns400()
+    {
+        var (slug, tenantId) = await ClinicAsync();
+        var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
+        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var owner = await SignedInAsync(slug, ownerEmail);
+
+        var response = await owner.PutAsJsonAsync($"/api/v1/staff/{staffId}", new { firstName = "Test", lastName = "Dentist", email = "other@life.test" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("staff.EmailLockedByAccess");
+    }
 }
