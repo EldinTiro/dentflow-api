@@ -2,6 +2,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using DentFlow.Domain.Identity;
+using DentFlow.Application.Common;
 
 namespace DentFlow.Identity.Application.Commands;
 
@@ -18,7 +19,7 @@ public class ResetUserPasswordCommandHandler(UserManager<ApplicationUser> userMa
         var user = await userManager.FindByIdAsync(command.UserId.ToString());
         if (user is null) return IdentityErrors.UserNotFound;
 
-        var tempPassword = $"Tmp_{Guid.NewGuid():N}!A1";
+        var tempPassword = TemporaryPassword.Generate();
         var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
         var result = await userManager.ResetPasswordAsync(user, resetToken, tempPassword);
 

@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using DentFlow.Application.Common.Interfaces;
 using DentFlow.Domain.Identity;
+using DentFlow.Application.Common;
 
 namespace DentFlow.Identity.Application.Commands;
 
@@ -21,7 +22,7 @@ public class InviteTenantUserCommandHandler(IUserProvisioningService userProvisi
     public async Task<ErrorOr<InviteTenantUserResult>> Handle(
         InviteTenantUserCommand command, CancellationToken ct)
     {
-        var tempPassword = $"Tmp_{Guid.NewGuid():N}!A1";
+        var tempPassword = TemporaryPassword.Generate();
 
         var result = await userProvisioningService.CreateUserAsync(
             command.Email, tempPassword,

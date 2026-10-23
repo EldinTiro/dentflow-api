@@ -115,12 +115,20 @@ public class StaffMember : TenantAuditableEntity
     /// </summary>
     public ErrorOr<Success> LinkUser(Guid userId)
     {
-        if (UserId is not null) return StaffErrors.AlreadyHasAccess;
-        if (!IsActive) return StaffErrors.Inactive;
-        if (string.IsNullOrWhiteSpace(Email)) return StaffErrors.EmailRequiredForAccess;
+        var allowed = CanLinkUser();
+        if (allowed.IsError) return allowed.Errors;
 
         UserId = userId;
         SetUpdated();
+        return Result.Success;
+    }
+
+    /// <summary>Same rules as <see cref="LinkUser"/>, checked before an account is created for it.</summary>
+    public ErrorOr<Success> CanLinkUser()
+    {
+        if (UserId is not null) return StaffErrors.AlreadyHasAccess;
+        if (!IsActive) return StaffErrors.Inactive;
+        if (string.IsNullOrWhiteSpace(Email)) return StaffErrors.EmailRequiredForAccess;
         return Result.Success;
     }
 
