@@ -4,6 +4,7 @@ using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Queries;
 using DentFlow.Staff.Domain;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -12,7 +13,7 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
     public override void Configure()
     {
         Get("/staff");
-        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist", "SuperAdmin");
+        Roles([.. DomainRoles.All]);
         Version(1);
         Summary(s => s.Summary = "List staff members with optional filters");
     }

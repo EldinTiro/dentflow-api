@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -11,7 +12,7 @@ public class StaffSetAvailabilityEndpoint(ISender sender) : Endpoint<SetStaffAva
     public override void Configure()
     {
         Post("/staff/{id}/availability");
-        Roles("ClinicOwner", "SuperAdmin");
+        Policies(Permission.PeopleManage);
         Version(1);
         Summary(s =>
         {

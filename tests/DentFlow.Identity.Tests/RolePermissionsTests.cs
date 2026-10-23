@@ -70,4 +70,18 @@ public class RolePermissionsTests
     [Fact]
     public void Retired_NeverOverlapsCurrentRoles() =>
         Roles.Retired.Keys.Should().NotIntersectWith(Roles.All);
+
+    // ── People (documentation/people-merge-plan-2026-10-23.md, D2 / R1) ──────
+
+    [Fact]
+    public void ClinicOwner_HasPeopleManage() =>
+        RolePermissions.Has(Roles.ClinicOwner, Permission.PeopleManage).Should().BeTrue();
+
+    [Theory]
+    [InlineData(Roles.Dentist)]
+    [InlineData(Roles.DentalNurse)]
+    [InlineData(Roles.Receptionist)]
+    [InlineData(Roles.SuperAdmin)]
+    public void OtherRoles_DoNotHavePeopleManage(string role) =>
+        RolePermissions.Has(role, Permission.PeopleManage).Should().BeFalse();
 }

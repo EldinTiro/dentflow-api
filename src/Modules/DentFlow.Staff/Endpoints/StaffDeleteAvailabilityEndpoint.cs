@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -10,7 +11,7 @@ public class StaffDeleteAvailabilityEndpoint(ISender sender) : EndpointWithoutRe
     public override void Configure()
     {
         Delete("/staff/{id}/availability/{availabilityId}");
-        Roles("ClinicOwner", "SuperAdmin");
+        Policies(Permission.PeopleManage);
         Version(1);
         Summary(s => s.Summary = "Remove an availability slot from a staff member");
     }

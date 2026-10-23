@@ -2,6 +2,7 @@
 using MediatR;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -10,7 +11,7 @@ public class StaffDeleteEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Delete("/staff/{id}");
-        Roles("ClinicOwner", "SuperAdmin");
+        Policies(Permission.PeopleManage);
         Version(1);
         Summary(s => s.Summary = "Soft-delete a staff member");
     }

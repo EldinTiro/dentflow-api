@@ -22,8 +22,14 @@ public static class Permission
     /// <summary>Clinic-level money: revenue, outstanding totals, the full invoice ledger.</summary>
     public const string FinanceView = "finance.view";
 
+    /// <summary>
+    /// Add, edit and deactivate staff, and decide who can sign in (grant access, change
+    /// role, reset password). Owner only (people-merge plan D2 / R1).
+    /// </summary>
+    public const string PeopleManage = "people.manage";
+
     public static readonly IReadOnlyList<string> All =
     [
-        DashboardView, BillingView, BillingCollect, FinanceAdjust, FinanceView,
+        DashboardView, BillingView, BillingCollect, FinanceAdjust, FinanceView, PeopleManage,
     ];
 }
