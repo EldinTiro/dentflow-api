@@ -139,6 +139,18 @@ public class StaffMember : TenantAuditableEntity
         return Result.Success;
     }
 
+    /// <summary>
+    /// Backfill only (people-merge plan 3.1): attaches an account that already exists to its
+    /// profile even when one of them is inactive — history is linked, not refused.
+    /// </summary>
+    public ErrorOr<Success> AttachExistingAccount(Guid userId)
+    {
+        if (UserId is not null) return StaffErrors.AlreadyHasAccess;
+        UserId = userId;
+        SetUpdated();
+        return Result.Success;
+    }
+
     public void Unlink()
     {
         UserId = null;

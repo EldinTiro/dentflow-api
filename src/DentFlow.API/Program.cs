@@ -150,6 +150,8 @@ using (var scope = app.Services.CreateScope())
 
 // Seed SuperAdmin user + default appointment types on startup
 await SuperAdminSeeder.SeedAsync(app.Services);
+// Every clinic account gets its staff profile (people-merge plan 3.1); after the role sync.
+await DentFlow.Infrastructure.StaffAccountBackfill.RunAsync(app.Services);
 await AppointmentTypeSeeder.SeedAsync(app.Services);
 
 // Demo data for local work only, and off unless explicitly asked for.
