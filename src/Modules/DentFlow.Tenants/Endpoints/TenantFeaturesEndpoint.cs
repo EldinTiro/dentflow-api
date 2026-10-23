@@ -17,11 +17,7 @@ public class TenantFeaturesEndpoint(ISender sender) : EndpointWithoutRequest<Ten
     public override void Configure()
     {
         Get("/tenant/features");
-        Roles(
-            DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin,
-            DomainRoles.Dentist, DomainRoles.Hygienist,
-            DomainRoles.Receptionist, DomainRoles.BillingStaff,
-            DomainRoles.ReadOnly);
+        Roles(DomainRoles.ClinicOwner, DomainRoles.Dentist, DomainRoles.DentalNurse, DomainRoles.Receptionist);
         Version(1);
         Summary(s => s.Summary = "Get the feature flags and quotas active for the current tenant plan");
     }

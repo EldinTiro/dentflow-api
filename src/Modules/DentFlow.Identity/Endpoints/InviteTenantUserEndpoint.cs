@@ -12,7 +12,7 @@ public class InviteTenantUserEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/users/invite");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin);
+        Roles(DomainRoles.ClinicOwner);
         Version(1);
         Summary(s => s.Summary = "Invite a new user to the caller's clinic and receive a temporary password");
     }

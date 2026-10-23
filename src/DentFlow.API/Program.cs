@@ -84,7 +84,12 @@ builder.Services
         ];
     })
     .AddAuthenticationJwtBearer(o => o.SigningKey = jwtSigningKey)
-    .AddAuthorization();
+    .AddAuthorization(o =>
+    {
+        // One policy per permission, satisfied by the roles RolePermissions grants it to.
+        foreach (var permission in DentFlow.Domain.Identity.Permission.All)
+            o.AddPolicy(permission, p => p.RequireRole(DentFlow.Domain.Identity.RolePermissions.RolesWith(permission)));
+    });
 
 builder.Services.SwaggerDocument(o =>
 {

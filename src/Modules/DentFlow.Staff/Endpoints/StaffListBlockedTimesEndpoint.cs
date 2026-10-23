@@ -11,7 +11,7 @@ public class StaffListBlockedTimesEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Get("/staff/{id}/blocked-times");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "List blocked times for a staff member");
     }

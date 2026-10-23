@@ -12,7 +12,7 @@ public class StaffCreateEndpoint(ISender sender) : Endpoint<CreateStaffMemberReq
     public override void Configure()
     {
         Post("/staff");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s =>
         {

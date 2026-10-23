@@ -19,7 +19,7 @@ public class PatientDocumentUploadEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/documents");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         AllowFileUploads();
         Summary(s => s.Summary = "Upload a document for a patient");

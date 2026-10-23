@@ -10,7 +10,7 @@ public class StaffDeleteBlockedTimeEndpoint(ISender sender) : EndpointWithoutReq
     public override void Configure()
     {
         Delete("/staff/{id}/blocked-times/{blockedTimeId}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Remove a blocked time from a staff member");
     }

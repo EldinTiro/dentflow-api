@@ -11,7 +11,7 @@ public class StaffGetAvailabilityEndpoint(ISender sender) : EndpointWithoutReque
     public override void Configure()
     {
         Get("/staff/{id}/availability");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Get all availability slots for a staff member");
     }

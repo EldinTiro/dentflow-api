@@ -12,7 +12,7 @@ public class PatientCreateEndpoint(ISender sender) : Endpoint<CreatePatientReque
     public override void Configure()
     {
         Post("/patients");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Create a new patient");
     }

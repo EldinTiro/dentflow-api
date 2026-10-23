@@ -12,7 +12,7 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
     public override void Configure()
     {
         Get("/staff");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "List staff members with optional filters");
     }

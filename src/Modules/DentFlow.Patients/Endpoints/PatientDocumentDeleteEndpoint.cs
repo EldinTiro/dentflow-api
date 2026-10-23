@@ -10,7 +10,7 @@ public class PatientDocumentDeleteEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Delete("/patients/{patientId}/documents/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Delete a patient document");
     }

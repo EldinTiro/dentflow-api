@@ -13,7 +13,7 @@ public class TreatmentPlanListEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/treatment-plans");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "List treatment plans for a patient");
     }

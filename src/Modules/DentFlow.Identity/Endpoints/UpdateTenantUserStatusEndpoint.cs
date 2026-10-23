@@ -14,7 +14,7 @@ public class UpdateTenantUserStatusEndpoint(ISender sender, UserManager<Applicat
     public override void Configure()
     {
         Put("/users/{id}/status");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin);
+        Roles(DomainRoles.ClinicOwner);
         Version(1);
         Summary(s => s.Summary = "Activate or deactivate a user within the caller's clinic");
     }

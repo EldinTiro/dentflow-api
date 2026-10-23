@@ -12,7 +12,7 @@ public class PatientDocumentGetUrlEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Get("/patients/{patientId}/documents/{id}/url");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Get a presigned download URL for a patient document");
     }

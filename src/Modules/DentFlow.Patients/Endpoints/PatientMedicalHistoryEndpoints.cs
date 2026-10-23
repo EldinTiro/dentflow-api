@@ -13,7 +13,7 @@ public class GetMedicalHistoryEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/medical-history");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 
@@ -52,7 +52,7 @@ public class UpsertMedicalHistoryEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/patients/{patientId}/medical-history");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 

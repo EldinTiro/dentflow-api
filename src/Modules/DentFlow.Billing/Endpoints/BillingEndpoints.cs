@@ -1,3 +1,4 @@
+using DentFlow.Domain.Identity;
 using FastEndpoints;
 using MediatR;
 using DentFlow.Billing.Application;
@@ -22,7 +23,7 @@ public class InvoiceCreateEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/invoices");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff", "Receptionist");
+        Policies(Permission.BillingCollect);
         Version(1);
         Summary(s => s.Summary = "Create an invoice for a patient");
     }
@@ -45,7 +46,8 @@ public class InvoiceListEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/invoices");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff", "Receptionist", "Dentist", "ReadOnly");
+        // The whole clinic's ledger: clinic-level money.
+        Policies(Permission.FinanceView);
         Version(1);
         Summary(s => s.Summary = "List all invoices with optional filters");
     }
@@ -76,7 +78,7 @@ public class InvoiceListByPatientEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/invoices");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff", "Receptionist", "Dentist", "ReadOnly");
+        Policies(Permission.BillingView);
         Version(1);
         Summary(s => s.Summary = "List invoices for a specific patient");
     }
@@ -106,7 +108,7 @@ public class InvoiceGetByIdEndpoint(ISender sender) : EndpointWithoutRequest<Inv
     public override void Configure()
     {
         Get("/invoices/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff", "Receptionist", "Dentist", "ReadOnly");
+        Policies(Permission.BillingView);
         Version(1);
         Summary(s => s.Summary = "Get invoice by ID");
     }
@@ -133,7 +135,7 @@ public class InvoiceUpdateEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/invoices/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff");
+        Policies(Permission.FinanceAdjust);
         Version(1);
         Summary(s => s.Summary = "Update invoice metadata (due date, notes)");
     }
@@ -154,7 +156,7 @@ public class InvoiceVoidEndpoint(ISender sender) : EndpointWithoutRequest<Invoic
     public override void Configure()
     {
         Post("/invoices/{id}/void");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff");
+        Policies(Permission.FinanceAdjust);
         Version(1);
         Summary(s => s.Summary = "Void an invoice");
     }
@@ -185,7 +187,7 @@ public class AddLineItemEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/invoices/{id}/line-items");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff");
+        Policies(Permission.FinanceAdjust);
         Version(1);
         Summary(s => s.Summary = "Add a line item to an invoice");
     }
@@ -217,7 +219,7 @@ public class UpdateLineItemEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/invoices/{id}/line-items/{itemId}");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff");
+        Policies(Permission.FinanceAdjust);
         Version(1);
         Summary(s => s.Summary = "Update a line item on an invoice");
     }
@@ -239,7 +241,7 @@ public class DeleteLineItemEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Delete("/invoices/{id}/line-items/{itemId}");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff");
+        Policies(Permission.FinanceAdjust);
         Version(1);
         Summary(s => s.Summary = "Remove a line item from an invoice");
     }
@@ -267,7 +269,7 @@ public class CreateInvoiceFromTreatmentPlanEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/treatment-plans/{planId}/invoice");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff", "Receptionist");
+        Policies(Permission.BillingCollect);
         Version(1);
         Summary(s => s.Summary = "Create an invoice pre-populated from all items in a treatment plan");
     }
@@ -298,7 +300,7 @@ public class RecordPaymentEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/invoices/{id}/payments");
-        Roles("ClinicOwner", "ClinicAdmin", "BillingStaff", "Receptionist");
+        Policies(Permission.BillingCollect);
         Version(1);
         Summary(s => s.Summary = "Record a payment against an invoice");
     }

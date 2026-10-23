@@ -33,29 +33,6 @@ internal sealed class DashboardService(ApplicationDbContext db) : IDashboardServ
         var todayOnly       = DateOnly.FromDateTime(today);
         var thirtyDaysLater = todayOnly.AddDays(30);
 
-        // ── Revenue this month ──────────────────────────────────────────────
-        var revenueThisMonth = await db.Set<InvoicePayment>()
-            .Where(p => p.PaidAt >= monthStart)
-            .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
-
-        // ── Outstanding balance (all non-void invoices) ─────────────────────
-        // SubTotal - PaidAmount for each invoice
-        var invoiceTotals = await db.Set<Invoice>()
-            .Where(i => i.Status != InvoiceStatus.Void &&
-                        i.Status != InvoiceStatus.Paid)
-            .Select(i => new
-            {
-                SubTotal  = db.Set<InvoiceLineItem>()
-                              .Where(li => li.InvoiceId == i.Id)
-                              .Sum(li => (decimal?)(li.Quantity * li.UnitFee)) ?? 0m,
-                PaidAmount = db.Set<InvoicePayment>()
-                              .Where(p => p.InvoiceId == i.Id)
-                              .Sum(p => (decimal?)p.Amount) ?? 0m
-            })
-            .ToListAsync(cancellationToken);
-
-        var outstandingBalance = invoiceTotals.Sum(x => x.SubTotal - x.PaidAmount);
-
         // ── New patients this month ─────────────────────────────────────────
         var newPatientsThisMonth = await db.Set<Patient>()
             .CountAsync(p => p.FirstVisitDate != null &&
@@ -92,12 +69,43 @@ internal sealed class DashboardService(ApplicationDbContext db) : IDashboardServ
                         cancellationToken);
 
         return new DashboardStatsResponse(
-            RevenueThisMonth:               Math.Round(revenueThisMonth, 2),
-            OutstandingBalance:             Math.Round(outstandingBalance, 2),
             NewPatientsThisMonth:           newPatientsThisMonth,
             AppointmentsCompletedThisWeek:  completedThisWeek,
             AppointmentsCompletedLastWeek:  completedLastWeek,
             RecallDueSoon:                  recallDueSoon,
             RecallOverdue:                  recallOverdue);
+    }
+
+    public async Task<DashboardFinanceResponse> GetFinanceAsync(CancellationToken cancellationToken = default)
+    {
+        var now        = DateTime.UtcNow;
+        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // ── Revenue this month ──────────────────────────────────────────────
+        var revenueThisMonth = await db.Set<InvoicePayment>()
+            .Where(p => p.PaidAt >= monthStart)
+            .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
+
+        // ── Outstanding balance (all non-void invoices) ─────────────────────
+        // SubTotal - PaidAmount for each invoice
+        var invoiceTotals = await db.Set<Invoice>()
+            .Where(i => i.Status != InvoiceStatus.Void &&
+                        i.Status != InvoiceStatus.Paid)
+            .Select(i => new
+            {
+                SubTotal  = db.Set<InvoiceLineItem>()
+                              .Where(li => li.InvoiceId == i.Id)
+                              .Sum(li => (decimal?)(li.Quantity * li.UnitFee)) ?? 0m,
+                PaidAmount = db.Set<InvoicePayment>()
+                              .Where(p => p.InvoiceId == i.Id)
+                              .Sum(p => (decimal?)p.Amount) ?? 0m
+            })
+            .ToListAsync(cancellationToken);
+
+        var outstandingBalance = invoiceTotals.Sum(x => x.SubTotal - x.PaidAmount);
+
+        return new DashboardFinanceResponse(
+            RevenueThisMonth:   Math.Round(revenueThisMonth, 2),
+            OutstandingBalance: Math.Round(outstandingBalance, 2));
     }
 }

@@ -12,7 +12,7 @@ public class PatientUpdateEndpoint(ISender sender) : Endpoint<UpdatePatientReque
     public override void Configure()
     {
         Put("/patients/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Update a patient's details");
     }

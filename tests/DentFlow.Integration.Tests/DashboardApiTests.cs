@@ -12,9 +12,8 @@ namespace DentFlow.Integration.Tests;
 public class DashboardApiTests(DentFlowAppFactory factory)
 {
     private record IdDto(Guid Id);
+    private record Finance(decimal RevenueThisMonth, decimal OutstandingBalance);
     private record Stats(
-        decimal RevenueThisMonth,
-        decimal OutstandingBalance,
         int NewPatientsThisMonth,
         int AppointmentsCompletedThisWeek,
         int AppointmentsCompletedLastWeek,
@@ -58,10 +57,11 @@ public class DashboardApiTests(DentFlowAppFactory factory)
         pay.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var stats = await client.GetFromJsonAsync<Stats>("/api/v1/dashboard/stats");
+        var finance = await client.GetFromJsonAsync<Finance>("/api/v1/dashboard/finance");
 
-        stats!.RevenueThisMonth.Should().Be(40m);
-        stats.OutstandingBalance.Should().Be(60m);
-        stats.NewPatientsThisMonth.Should().Be(1);
+        finance!.RevenueThisMonth.Should().Be(40m);
+        finance.OutstandingBalance.Should().Be(60m);
+        stats!.NewPatientsThisMonth.Should().Be(1);
     }
 
     [Fact]
@@ -76,8 +76,9 @@ public class DashboardApiTests(DentFlowAppFactory factory)
         await CreateInvoiceAsync(clinicA, patientId, 250m);
 
         var stats = await clinicB.GetFromJsonAsync<Stats>("/api/v1/dashboard/stats");
+        var finance = await clinicB.GetFromJsonAsync<Finance>("/api/v1/dashboard/finance");
 
-        stats!.OutstandingBalance.Should().Be(0m);
-        stats.NewPatientsThisMonth.Should().Be(0);
+        finance!.OutstandingBalance.Should().Be(0m);
+        stats!.NewPatientsThisMonth.Should().Be(0);
     }
 }

@@ -12,7 +12,7 @@ public class ListTenantUsersEndpoint(ISender sender) : EndpointWithoutRequest<Li
     public override void Configure()
     {
         Get("/users");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin);
+        Roles(DomainRoles.ClinicOwner);
         Version(1);
         Summary(s => s.Summary = "List users belonging to the caller's clinic");
     }

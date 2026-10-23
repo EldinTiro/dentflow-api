@@ -21,7 +21,7 @@ public class NotificationConfigUpdateEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/tenant/notification-config");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin);
+        Roles(DomainRoles.ClinicOwner);
         Version(1);
         Summary(s => s.Summary = "Update SMS notification reminder configuration for this clinic");
     }

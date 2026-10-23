@@ -12,7 +12,7 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
     public override void Configure()
     {
         Get("/patients");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "List patients with optional search and status filter");
     }

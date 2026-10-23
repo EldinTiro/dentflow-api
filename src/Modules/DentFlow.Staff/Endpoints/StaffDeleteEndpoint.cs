@@ -10,7 +10,7 @@ public class StaffDeleteEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Delete("/staff/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Soft-delete a staff member");
     }

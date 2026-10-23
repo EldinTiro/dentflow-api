@@ -13,7 +13,7 @@ public class NotificationConfigGetEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Get("/tenant/notification-config");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin);
+        Roles(DomainRoles.ClinicOwner);
         Version(1);
         Summary(s => s.Summary = "Get SMS notification reminder configuration for this clinic");
     }

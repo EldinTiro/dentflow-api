@@ -10,7 +10,7 @@ public class PatientDeleteEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Delete("/patients/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Soft-delete a patient");
     }

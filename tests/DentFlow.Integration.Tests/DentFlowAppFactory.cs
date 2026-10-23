@@ -172,7 +172,7 @@ public class DentFlowAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
     /// </summary>
     public HttpClient CreateClientForTenant(Guid tenantId, string tenantSlug, params string[] roles)
     {
-        var token = CreateToken(roles.Length > 0 ? roles : ["ClinicOwner", "ClinicAdmin"], tenantSlug, tenantId);
+        var token = CreateToken(roles.Length > 0 ? roles : ["ClinicOwner"], tenantSlug, tenantId);
         var client = CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri($"http://{tenantSlug}.localhost")
@@ -183,7 +183,7 @@ public class DentFlowAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
     }
 
     public HttpClient CreateAdminClient(string? tenantSlug = null) =>
-        CreateAuthenticatedClient(["ClinicOwner", "ClinicAdmin"], tenantSlug);
+        CreateAuthenticatedClient(["ClinicOwner"], tenantSlug);
 
     public HttpClient CreateReceptionistClient(string? tenantSlug = null) =>
         CreateAuthenticatedClient(["Receptionist"], tenantSlug);

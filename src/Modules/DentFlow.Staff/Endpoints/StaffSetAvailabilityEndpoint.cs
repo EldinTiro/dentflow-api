@@ -11,7 +11,7 @@ public class StaffSetAvailabilityEndpoint(ISender sender) : Endpoint<SetStaffAva
     public override void Configure()
     {
         Post("/staff/{id}/availability");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s =>
         {

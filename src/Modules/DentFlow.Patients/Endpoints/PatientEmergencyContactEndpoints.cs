@@ -13,7 +13,7 @@ public class ListEmergencyContactsEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/emergency-contacts");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 
@@ -40,7 +40,7 @@ public class AddEmergencyContactEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/emergency-contacts");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 
@@ -59,7 +59,7 @@ public class DeleteEmergencyContactEndpoint(ISender sender) : EndpointWithoutReq
     public override void Configure()
     {
         Delete("/patients/{patientId}/emergency-contacts/{contactId}");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 

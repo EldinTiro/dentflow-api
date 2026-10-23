@@ -11,7 +11,7 @@ public class AppointmentListEndpoint(ISender sender) : EndpointWithoutRequest<Pa
     public override void Configure()
     {
         Get("/appointments");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "List appointments with optional filters");
     }

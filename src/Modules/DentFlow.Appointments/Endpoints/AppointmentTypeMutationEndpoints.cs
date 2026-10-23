@@ -32,7 +32,7 @@ public class AppointmentTypeCreateEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/appointment-types");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Create a new appointment type");
     }
@@ -59,7 +59,7 @@ public class AppointmentTypeUpdateEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/appointment-types/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Update an appointment type");
     }
@@ -88,7 +88,7 @@ public class AppointmentTypeDeleteEndpoint(ISender sender)
     public override void Configure()
     {
         Delete("/appointment-types/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Soft-delete an appointment type");
     }

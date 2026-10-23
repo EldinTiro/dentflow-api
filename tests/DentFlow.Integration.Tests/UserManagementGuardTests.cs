@@ -82,7 +82,7 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
         var client = await SignedInAsync(admin, clinic.Slug);
 
         (await SetActive(client, "/admin", admin, false)).StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await SetRole(client, "/admin", admin, Roles.ReadOnly)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await SetRole(client, "/admin", admin, Roles.Receptionist)).StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -95,41 +95,39 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
         (await SetActive(admin, "/admin", owner, false)).StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    // ── ClinicAdmin vs ClinicOwner ────────────────────────────────────────
+    // ── Only the owner manages the team (Clinic Admin was removed) ──────────
 
     [Fact]
-    public async Task ClinicAdmin_CannotDemoteOrDeactivateTheOwner()
+    public async Task ClinicStaff_CannotDemoteOrDeactivateTheOwner()
     {
         var clinic = await ClinicAsync();
         var owner = await UserAsync(clinic, Roles.ClinicOwner);
-        var admin = await SignedInAsync(await UserAsync(clinic, Roles.ClinicAdmin), clinic.Slug);
+        var receptionist = await SignedInAsync(await UserAsync(clinic, Roles.Receptionist), clinic.Slug);
 
-        (await SetRole(admin, "", owner, Roles.Receptionist)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await SetActive(admin, "", owner, false)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await SetRole(receptionist, "", owner, Roles.Receptionist)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await SetActive(receptionist, "", owner, false)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task ClinicAdmin_CannotPromoteAnyoneToOwner()
+    public async Task ClinicStaff_CannotPromoteAnyoneToOwner()
     {
         var clinic = await ClinicAsync();
         await UserAsync(clinic, Roles.ClinicOwner);
-        var adminId = await UserAsync(clinic, Roles.ClinicAdmin);
         var receptionist = await UserAsync(clinic, Roles.Receptionist);
-        var admin = await SignedInAsync(adminId, clinic.Slug);
+        var dentist = await SignedInAsync(await UserAsync(clinic, Roles.Dentist), clinic.Slug);
 
-        (await SetRole(admin, "", receptionist, Roles.ClinicOwner)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await SetRole(dentist, "", receptionist, Roles.ClinicOwner)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task ClinicAdmin_CanStillManageOrdinaryStaff()
+    public async Task Owner_CanManageOrdinaryStaff()
     {
         var clinic = await ClinicAsync();
-        await UserAsync(clinic, Roles.ClinicOwner);
-        var admin = await SignedInAsync(await UserAsync(clinic, Roles.ClinicAdmin), clinic.Slug);
+        var owner = await SignedInAsync(await UserAsync(clinic, Roles.ClinicOwner), clinic.Slug);
         var receptionist = await UserAsync(clinic, Roles.Receptionist);
 
-        (await SetRole(admin, "", receptionist, Roles.BillingStaff)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await SetActive(admin, "", receptionist, false)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await SetRole(owner, "", receptionist, Roles.DentalNurse)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await SetActive(owner, "", receptionist, false)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
@@ -139,7 +137,7 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
         var owner = await SignedInAsync(await UserAsync(clinic, Roles.ClinicOwner), clinic.Slug);
         var second = await UserAsync(clinic, Roles.ClinicOwner);
 
-        (await SetRole(owner, "", second, Roles.ClinicAdmin)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await SetRole(owner, "", second, Roles.Dentist)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     // ── Platform role ─────────────────────────────────────────────────────

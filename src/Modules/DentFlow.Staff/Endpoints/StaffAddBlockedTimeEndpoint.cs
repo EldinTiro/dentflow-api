@@ -11,7 +11,7 @@ public class StaffAddBlockedTimeEndpoint(ISender sender) : Endpoint<AddBlockedTi
     public override void Configure()
     {
         Post("/staff/{id}/blocked-times");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s =>
         {

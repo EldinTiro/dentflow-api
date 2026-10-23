@@ -11,7 +11,7 @@ public class PatientGetByIdEndpoint(ISender sender) : EndpointWithoutRequest<Pat
     public override void Configure()
     {
         Get("/patients/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Get a patient by ID");
     }

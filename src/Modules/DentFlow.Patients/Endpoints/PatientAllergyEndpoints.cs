@@ -13,7 +13,7 @@ public class ListAllergiesEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/allergies");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 
@@ -40,7 +40,7 @@ public class AddAllergyEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/allergies");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 
@@ -59,7 +59,7 @@ public class DeleteAllergyEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Delete("/patients/{patientId}/allergies/{allergyId}");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
     }
 

@@ -21,7 +21,7 @@ public class TreatmentPlanItemAddEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/treatment-plans/{planId}/items");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Add an item to a treatment plan");
     }

@@ -10,7 +10,7 @@ public class TreatmentPlanDeleteEndpoint(ISender sender) : EndpointWithoutReques
     public override void Configure()
     {
         Delete("/treatment-plans/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Soft-delete a treatment plan");
     }

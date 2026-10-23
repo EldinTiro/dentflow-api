@@ -10,7 +10,7 @@ public class StaffDeleteAvailabilityEndpoint(ISender sender) : EndpointWithoutRe
     public override void Configure()
     {
         Delete("/staff/{id}/availability/{availabilityId}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Roles("ClinicOwner", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Remove an availability slot from a staff member");
     }

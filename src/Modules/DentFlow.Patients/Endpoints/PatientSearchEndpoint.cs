@@ -11,7 +11,7 @@ public class PatientSearchEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/search");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Quick patient autocomplete search by name, phone or email. Returns up to 20 results.");
     }

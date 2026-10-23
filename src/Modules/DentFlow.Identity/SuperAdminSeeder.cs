@@ -8,15 +8,18 @@ namespace DentFlow.Identity;
 
 public static class SuperAdminSeeder
 {
-    public static async Task SeedAsync(IServiceProvider services)
+    /// <summary>
+    /// Makes the role table match <see cref="Roles.All"/>: creates missing roles, moves
+    /// users out of retired roles (<see cref="Roles.Retired"/>; deactivating where the map
+    /// says null) and deletes the retired roles. Idempotent; runs at every startup.
+    /// </summary>
+    public static async Task SyncRolesAsync(IServiceProvider services)
     {
         using var scope = services.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationUser>>();
 
-        // Ensure all roles exist
         foreach (var role in Roles.All)
         {
             if (!await roleManager.RoleExistsAsync(role))
@@ -25,6 +28,41 @@ public static class SuperAdminSeeder
                 logger.LogInformation("Created role: {Role}", role);
             }
         }
+
+        foreach (var (retired, replacement) in Roles.Retired)
+        {
+            var role = await roleManager.FindByNameAsync(retired);
+            if (role is null) continue;
+
+            foreach (var user in await userManager.GetUsersInRoleAsync(retired))
+            {
+                await userManager.RemoveFromRoleAsync(user, retired);
+                if (replacement is null)
+                {
+                    user.IsActive = false;
+                    await userManager.UpdateAsync(user);
+                    logger.LogWarning("Deactivated {Email}: role {Role} was removed", user.Email, retired);
+                }
+                else if (!await userManager.IsInRoleAsync(user, replacement))
+                {
+                    await userManager.AddToRoleAsync(user, replacement);
+                    logger.LogInformation("Moved {Email} from {Old} to {New}", user.Email, retired, replacement);
+                }
+            }
+
+            await roleManager.DeleteAsync(role);
+            logger.LogInformation("Removed retired role: {Role}", retired);
+        }
+    }
+
+    public static async Task SeedAsync(IServiceProvider services)
+    {
+        await SyncRolesAsync(services);
+
+        using var scope = services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApplicationUser>>();
 
         var email = config["SuperAdmin:Email"];
         var password = config["SuperAdmin:Password"];

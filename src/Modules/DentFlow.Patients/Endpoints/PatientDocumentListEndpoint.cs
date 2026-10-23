@@ -11,7 +11,7 @@ public class PatientDocumentListEndpoint(ISender sender) : EndpointWithoutReques
     public override void Configure()
     {
         Get("/patients/{patientId}/documents");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "List documents for a patient");
     }
