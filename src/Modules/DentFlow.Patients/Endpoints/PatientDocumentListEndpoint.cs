@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -11,7 +12,7 @@ public class PatientDocumentListEndpoint(ISender sender) : EndpointWithoutReques
     public override void Configure()
     {
         Get("/patients/{patientId}/documents");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "List documents for a patient");
     }

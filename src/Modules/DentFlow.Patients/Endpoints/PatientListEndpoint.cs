@@ -4,6 +4,7 @@ using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Patients.Domain;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -12,7 +13,7 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
     public override void Configure()
     {
         Get("/patients");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "List patients with optional search and status filter");
     }

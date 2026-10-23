@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -12,7 +13,7 @@ public class PatientDocumentGetUrlEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Get("/patients/{patientId}/documents/{id}/url");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Get a presigned download URL for a patient document");
     }

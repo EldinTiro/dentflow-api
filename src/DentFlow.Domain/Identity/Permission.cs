@@ -28,8 +28,14 @@ public static class Permission
     /// </summary>
     public const string PeopleManage = "people.manage";
 
+    /// <summary>
+    /// Add, edit and deactivate patients and their medical data. Every clinic role
+    /// (people-merge plan R2); not the platform admin.
+    /// </summary>
+    public const string PatientsManage = "patients.manage";
+
     public static readonly IReadOnlyList<string> All =
     [
-        DashboardView, BillingView, BillingCollect, FinanceAdjust, FinanceView, PeopleManage,
+        DashboardView, BillingView, BillingCollect, FinanceAdjust, FinanceView, PeopleManage, PatientsManage,
     ];
 }

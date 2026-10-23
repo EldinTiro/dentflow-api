@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -19,7 +20,7 @@ public class PatientDocumentUploadEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/documents");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
         AllowFileUploads();
         Summary(s => s.Summary = "Upload a document for a patient");

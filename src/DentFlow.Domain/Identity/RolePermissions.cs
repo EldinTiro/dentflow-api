@@ -11,10 +11,10 @@ public static class RolePermissions
     private static readonly Dictionary<string, HashSet<string>> Map = new()
     {
         [Roles.ClinicOwner] = [.. Permission.All],
-        [Roles.Dentist] = [Permission.DashboardView, Permission.BillingView],
+        [Roles.Dentist] = [Permission.DashboardView, Permission.BillingView, Permission.PatientsManage],
         // Nurses work chairside and at the desk: they see and collect a patient's bill.
-        [Roles.DentalNurse] = [Permission.DashboardView, Permission.BillingView, Permission.BillingCollect],
-        [Roles.Receptionist] = [Permission.DashboardView, Permission.BillingView, Permission.BillingCollect],
+        [Roles.DentalNurse] = [Permission.DashboardView, Permission.BillingView, Permission.BillingCollect, Permission.PatientsManage],
+        [Roles.Receptionist] = [Permission.DashboardView, Permission.BillingView, Permission.BillingCollect, Permission.PatientsManage],
         // Platform admin: the operational dashboard only; never a clinic's money.
         [Roles.SuperAdmin] = [Permission.DashboardView],
     };

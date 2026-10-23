@@ -4,6 +4,7 @@ using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Patients.Domain;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -12,7 +13,7 @@ public class PatientUpdateEndpoint(ISender sender) : Endpoint<UpdatePatientReque
     public override void Configure()
     {
         Put("/patients/{id}");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
         Summary(s => s.Summary = "Update a patient's details");
     }

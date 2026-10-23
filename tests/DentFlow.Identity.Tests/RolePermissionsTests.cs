@@ -84,4 +84,19 @@ public class RolePermissionsTests
     [InlineData(Roles.SuperAdmin)]
     public void OtherRoles_DoNotHavePeopleManage(string role) =>
         RolePermissions.Has(role, Permission.PeopleManage).Should().BeFalse();
+
+    // ── Patients (people-merge plan B0 / R2) ─────────────────────────────
+
+    [Theory]
+    [InlineData(Roles.ClinicOwner)]
+    [InlineData(Roles.Dentist)]
+    [InlineData(Roles.DentalNurse)]
+    [InlineData(Roles.Receptionist)]
+    public void EveryClinicRole_HasPatientsManage(string role) =>
+        RolePermissions.Has(role, Permission.PatientsManage).Should().BeTrue();
+
+    // The platform admin does not handle a clinic's patients (roles proposal).
+    [Fact]
+    public void SuperAdmin_DoesNotHavePatientsManage() =>
+        RolePermissions.Has(Roles.SuperAdmin, Permission.PatientsManage).Should().BeFalse();
 }

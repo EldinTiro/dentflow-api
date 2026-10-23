@@ -4,6 +4,8 @@ using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -13,7 +15,7 @@ public class ListAllergiesEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/allergies");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
     }
 
@@ -40,7 +42,7 @@ public class AddAllergyEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/allergies");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
     }
 
@@ -59,7 +61,7 @@ public class DeleteAllergyEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Delete("/patients/{patientId}/allergies/{allergyId}");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
     }
 
