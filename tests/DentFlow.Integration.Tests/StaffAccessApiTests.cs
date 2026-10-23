@@ -84,4 +84,48 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
+
+    // ── 2.3: profile + account in one request ──────────────────────────
+
+    private record CreatedDto(Guid Id, string? TempPassword);
+    private record StaffRow(Guid Id, string? Email);
+    private record Paged(List<StaffRow> Items);
+
+    [Fact]
+    public async Task CreateWithAccess_CreatesBoth_InOneRequest()
+    {
+        var (slug, _, owner) = await ClinicAsync();
+        var email = $"dr-{Guid.NewGuid():N}@clinic.com";
+
+        var created = await owner.PostAsJsonAsync("/api/v1/staff", new
+        {
+            staffType = "Dentist", firstName = "Amra", lastName = "Begić", email, colorHex = "#3B82F6",
+            access = new { role = Roles.Dentist }
+        });
+
+        created.StatusCode.Should().Be(HttpStatusCode.Created, await created.Content.ReadAsStringAsync());
+        var dto = (await created.Content.ReadFromJsonAsync<CreatedDto>())!;
+        dto.TempPassword.Should().NotBeNullOrWhiteSpace();
+        var login = await factory.CreateAnonymousClient(slug).PostAsJsonAsync("/api/v1/auth/login", new { email, password = dto.TempPassword });
+        login.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await owner.GetStringAsync($"/api/v1/staff/{dto.Id}")).Should().NotContain("tempPassword", "the password is shown once, on creation");
+    }
+
+    [Fact]
+    public async Task CreateWithAccess_WhenTheEmailIsTakenOnThePlatform_Returns409_AndLeavesNoProfile()
+    {
+        var (_, tenantId, owner) = await ClinicAsync();
+        var email = $"taken-{Guid.NewGuid():N}@clinic.com";
+        await factory.SeedUserAsync(email, "Taken123!@#abcd", Roles.Dentist, tenantId);
+
+        var created = await owner.PostAsJsonAsync("/api/v1/staff", new
+        {
+            staffType = "Dentist", firstName = "Amra", lastName = "Begić", email, colorHex = "#3B82F6",
+            access = new { role = Roles.Dentist }
+        });
+
+        created.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        var list = await owner.GetFromJsonAsync<Paged>("/api/v1/staff?pageSize=100");
+        list!.Items.Should().NotContain(s => s.Email == email, "the profile insert is rolled back with the failed account");
+    }
 }

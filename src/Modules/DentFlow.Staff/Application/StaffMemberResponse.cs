@@ -1,4 +1,5 @@
-﻿﻿using DentFlow.Staff.Domain;
+﻿﻿using System.Text.Json.Serialization;
+using DentFlow.Staff.Domain;
 
 namespace DentFlow.Staff.Application;
 
@@ -24,7 +25,9 @@ public record StaffMemberResponse(
     string? PostalCode,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
-    bool IsBookable)
+    bool IsBookable,
+    // Only on the response that created the account, and only once; omitted elsewhere.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? TempPassword = null)
 {
     public static StaffMemberResponse FromEntity(StaffMember s) => new(
         s.Id,

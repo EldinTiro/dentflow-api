@@ -26,7 +26,7 @@ public class StaffCreateEndpoint(ISender sender) : Endpoint<CreateStaffMemberReq
     {
         var command = new CreateStaffMemberCommand(
             req.StaffType, req.FirstName, req.LastName, req.Email,
-            req.Phone, req.HireDate, req.Specialty, req.ColorHex);
+            req.Phone, req.HireDate, req.Specialty, req.ColorHex, req.Access);
 
         var result = await sender.Send(command, ct);
 
@@ -47,4 +47,5 @@ public record CreateStaffMemberRequest(
     string? Phone,
     DateOnly? HireDate,
     string? Specialty,
-    string? ColorHex);
+    string? ColorHex,
+    StaffAccessRequest? Access = null);
