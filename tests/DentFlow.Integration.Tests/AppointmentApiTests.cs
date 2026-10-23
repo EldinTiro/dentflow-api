@@ -240,6 +240,29 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         return (patient!.Id, staff!.Id, type!.Id);
     }
 
+    // People-merge plan B3 / D11
+    [Fact]
+    public async Task BookAppointment_ForAnInactivePatient_Returns409()
+    {
+        var (patientId, providerId, typeId) = await SeedBookingPrerequisites();
+        (await _admin.PostAsJsonAsync($"/api/v1/patients/{patientId}/deactivate", new { }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await _admin.PostAsJsonAsync("/api/v1/appointments", new
+        {
+            patientId,
+            providerId,
+            appointmentTypeId = typeId,
+            startAt = DateTime.UtcNow.AddDays(9).ToString("o"),
+            endAt = DateTime.UtcNow.AddDays(9).AddHours(1).ToString("o"),
+            chiefComplaint = "Checkup",
+            source = "Staff"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await response.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Patient.Inactive");
+    }
+
     // QA-034: Reschedule had no status check; it even reset a finished visit to Scheduled
     [Fact]
     public async Task Reschedule_InProgressAppointment_Returns409()

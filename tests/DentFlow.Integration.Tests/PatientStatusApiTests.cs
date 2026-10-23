@@ -74,6 +74,34 @@ public class PatientStatusApiTests(DentFlowAppFactory factory)
             .StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    private record PageDto(List<PatientDto> Items, int TotalCount);
+
+    // B3 / D11: inactive patients leave daily lists but stay one filter away.
+    [Fact]
+    public async Task PatientList_DefaultsToActive_AndStatusFiltersStillWork()
+    {
+        var client = factory.CreateAuthenticatedClient([Roles.Receptionist]);
+        var marker = $"Zlist{Guid.NewGuid():N}"[..14];
+        async Task<Guid> Create()
+        {
+            var r = await client.PostAsJsonAsync("/api/v1/patients", new { firstName = "List", lastName = marker, smsOptIn = false, emailOptIn = false });
+            return (await r.Content.ReadFromJsonAsync<IdDto>())!.Id;
+        }
+        var active = await Create();
+        var inactive = await Create();
+        (await client.PostAsJsonAsync($"/api/v1/patients/{inactive}/deactivate", new { })).EnsureSuccessStatusCode();
+
+        async Task<List<Guid>> Ids(string query) =>
+            (await client.GetFromJsonAsync<PageDto>($"/api/v1/patients?search={marker}{query}"))!.Items.Select(p => p.Id).ToList();
+
+        (await Ids("")).Should().BeEquivalentTo([active]);
+        (await Ids("&status=Inactive")).Should().BeEquivalentTo([inactive]);
+        (await Ids("&status=all")).Should().BeEquivalentTo([active, inactive]);
+
+        var search = await client.GetFromJsonAsync<List<IdDto>>($"/api/v1/patients/search?q={marker}");
+        search!.Select(p => p.Id).Should().BeEquivalentTo([active], "booking autocomplete leaves inactive patients out");
+    }
+
     [Fact]
     public async Task SuperAdmin_CannotDeactivate()
     {

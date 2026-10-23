@@ -15,7 +15,7 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
         Get("/patients");
         Roles([.. DomainRoles.TenantRoles]);
         Version(1);
-        Summary(s => s.Summary = "List patients with optional search and status filter");
+        Summary(s => s.Summary = "List patients with optional search and status filter (default Active; status=all for every status)");
     }
 
     public override async Task HandleAsync(CancellationToken ct)
@@ -28,9 +28,10 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
         var page = int.TryParse(pageStr, out var p) ? p : 1;
         var pageSize = Math.Min(int.TryParse(pageSizeStr, out var ps) ? ps : 20, 100);
 
-        PatientStatus? status = Enum.TryParse<PatientStatus>(statusStr, ignoreCase: true, out var parsed)
-            ? parsed
-            : null;
+        // People-merge plan D11: Active unless asked otherwise; "all" lifts the filter.
+        PatientStatus? status = string.Equals(statusStr, "all", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : Enum.TryParse<PatientStatus>(statusStr, ignoreCase: true, out var parsed) ? parsed : PatientStatus.Active;
 
         var result = await sender.Send(new ListPatientsQuery(search, status, recallFilter, page, pageSize), ct);
         if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }

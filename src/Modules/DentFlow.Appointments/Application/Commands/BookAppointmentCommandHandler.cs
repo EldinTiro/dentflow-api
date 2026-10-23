@@ -9,7 +9,8 @@ namespace DentFlow.Appointments.Application.Commands;
 public class BookAppointmentCommandHandler(
     IAppointmentRepository appointmentRepository,
     IAppointmentTypeRepository appointmentTypeRepository,
-    IProviderBlockedTimeChecker blockedTimeChecker)
+    IProviderBlockedTimeChecker blockedTimeChecker,
+    IPatientDirectory patients)
     : IRequestHandler<BookAppointmentCommand, ErrorOr<AppointmentResponse>>
 {
     public async Task<ErrorOr<AppointmentResponse>> Handle(
@@ -18,6 +19,9 @@ public class BookAppointmentCommandHandler(
     {
         if (command.EndAt <= command.StartAt)
             return AppointmentErrors.InvalidTimeRange;
+
+        if (await patients.IsInactiveAsync(command.PatientId, cancellationToken))
+            return AppointmentErrors.PatientInactive;
 
         var appointmentType = await appointmentTypeRepository.GetByIdAsync(command.AppointmentTypeId, cancellationToken);
         if (appointmentType is null)
