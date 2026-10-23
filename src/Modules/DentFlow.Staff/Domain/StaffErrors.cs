@@ -22,6 +22,17 @@ public static class StaffErrors
     public static readonly Error ConflictingAvailabilitySlot =
         Error.Conflict("Staff.ConflictingAvailabilitySlot", "An availability slot already exists for this day that overlaps with the requested time range.");
 
+    // ── Sign-in access (people-merge plan 1.1) ──────────────────────────
+
+    public static readonly Error AlreadyHasAccess =
+        Error.Conflict("Staff.AlreadyHasAccess", "This person can already sign in.");
+
+    public static readonly Error Inactive =
+        Error.Conflict("Staff.Inactive", "This person is inactive. Reactivate them first.");
+
+    public static readonly Error EmailRequiredForAccess =
+        Error.Validation("Staff.EmailRequiredForAccess", "An email address is needed to sign in. Add one to the profile first.");
+
     public static readonly Error BlockedTimeNotFound =
         Error.NotFound("Staff.BlockedTimeNotFound", "Staff blocked time was not found.");
 }

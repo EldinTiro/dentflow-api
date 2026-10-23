@@ -1,4 +1,5 @@
 ﻿﻿using DentFlow.Domain.Common;
+using ErrorOr;
 
 namespace DentFlow.Staff.Domain;
 
@@ -39,8 +40,7 @@ public class StaffMember : TenantAuditableEntity
         string? phone,
         DateOnly? hireDate,
         string? specialty = null,
-        string? colorHex = null,
-        Guid? userId = null)
+        string? colorHex = null)
     {
         return new StaffMember
         {
@@ -52,7 +52,6 @@ public class StaffMember : TenantAuditableEntity
             HireDate = hireDate,
             Specialty = specialty,
             ColorHex = colorHex ?? "#3B82F6",
-            UserId = userId
         };
     }
 
@@ -102,5 +101,33 @@ public class StaffMember : TenantAuditableEntity
     }
 
     public string FullName => $"{FirstName} {LastName}";
+
+    /// <summary>
+    /// Can appear in provider lists and be booked (people-merge plan D3). Decided here,
+    /// not in the web app: clinical people only, and never while inactive.
+    /// </summary>
+    public bool IsBookable =>
+        IsActive && StaffType is StaffType.Dentist or StaffType.Hygienist or StaffType.DentalAssistant;
+
+    /// <summary>
+    /// Ties a sign-in account to this profile. The profile's email is the login email (D1),
+    /// so it must exist; one profile holds at most one account.
+    /// </summary>
+    public ErrorOr<Success> LinkUser(Guid userId)
+    {
+        if (UserId is not null) return StaffErrors.AlreadyHasAccess;
+        if (!IsActive) return StaffErrors.Inactive;
+        if (string.IsNullOrWhiteSpace(Email)) return StaffErrors.EmailRequiredForAccess;
+
+        UserId = userId;
+        SetUpdated();
+        return Result.Success;
+    }
+
+    public void Unlink()
+    {
+        UserId = null;
+        SetUpdated();
+    }
 }
 

@@ -1415,6 +1415,10 @@ namespace DentFlow.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("\"Email\" IS NOT NULL AND \"IsDeleted\" = false");
 
+                    b.HasIndex("TenantId", "UserId")
+                        .IsUnique()
+                        .HasFilter("\"UserId\" IS NOT NULL AND \"IsDeleted\" = false");
+
                     b.ToTable("staff_members", (string)null);
                 });
 

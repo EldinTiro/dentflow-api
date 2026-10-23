@@ -23,7 +23,8 @@ public record StaffMemberResponse(
     string? City,
     string? PostalCode,
     DateTime CreatedAt,
-    DateTime? UpdatedAt)
+    DateTime? UpdatedAt,
+    bool IsBookable)
 {
     public static StaffMemberResponse FromEntity(StaffMember s) => new(
         s.Id,
@@ -46,6 +47,7 @@ public record StaffMemberResponse(
         s.City,
         s.PostalCode,
         s.CreatedAt,
-        s.UpdatedAt);
+        s.UpdatedAt,
+        s.IsBookable);
 }
 
