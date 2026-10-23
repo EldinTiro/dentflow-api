@@ -37,7 +37,7 @@ public static class IdentityErrors
     // ── User management guards (QA-012) ─────────────────────────────────
 
     public static readonly Error CannotChangeOwnAccount = Error.Conflict(
-        "User.Self", "You cannot change your own role or deactivate your own account.");
+        "User.Self", "You can't change your own access here. Use Profile & Settings for your own account.");
 
     public static readonly Error LastClinicOwner = Error.Conflict(
         "User.LastClinicOwner", "A clinic must keep at least one active owner.");
