@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<IFinanceReportService, FinanceReportService>();
         services.AddScoped<IPatientDirectory, PatientDirectory>();
         services.AddScoped<ITransactionRunner, TransactionRunner>();
+        services.AddScoped<IUserAccountDirectory, UserAccountDirectory>();
         services.AddHttpContextAccessor();
         services.AddScoped<IFeatureService, TierFeatureService>();
 

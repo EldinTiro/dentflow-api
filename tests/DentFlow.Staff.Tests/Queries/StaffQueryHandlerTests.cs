@@ -1,5 +1,6 @@
 ﻿﻿using FluentAssertions;
 using NSubstitute;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Staff.Application.Interfaces;
 using DentFlow.Staff.Application.Queries;
@@ -10,11 +11,40 @@ namespace DentFlow.Staff.Tests.Queries;
 public class GetStaffMemberByIdQueryHandlerTests
 {
     private readonly IStaffRepository _repo = Substitute.For<IStaffRepository>();
+    private readonly IUserAccountDirectory _accounts = Substitute.For<IUserAccountDirectory>();
     private readonly GetStaffMemberByIdQueryHandler _sut;
 
     public GetStaffMemberByIdQueryHandlerTests()
     {
-        _sut = new GetStaffMemberByIdQueryHandler(_repo);
+        _sut = new GetStaffMemberByIdQueryHandler(_repo, _accounts);
+        _accounts.GetSummariesAsync(default!, default).ReturnsForAnyArgs(new Dictionary<Guid, StaffAccessSummary>());
+    }
+
+    // People-merge plan 2.4
+    [Fact]
+    public async Task Handle_LinkedProfile_CarriesItsAccessSummary()
+    {
+        var staff = StaffMember.Create(StaffType.Dentist, "John", "Doe", "j@d.com", null, null);
+        var userId = Guid.NewGuid();
+        staff.LinkUser(userId);
+        _repo.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
+        var summary = new StaffAccessSummary(userId, "Dentist", true, true, null);
+        _accounts.GetSummariesAsync(default!, default).ReturnsForAnyArgs(new Dictionary<Guid, StaffAccessSummary> { [userId] = summary });
+
+        var result = await _sut.Handle(new GetStaffMemberByIdQuery(staff.Id), CancellationToken.None);
+
+        result.Value.Access.Should().Be(summary);
+    }
+
+    [Fact]
+    public async Task Handle_UnlinkedProfile_HasNoAccess()
+    {
+        var staff = StaffMember.Create(StaffType.Receptionist, "Jane", "Doe", null, null, null);
+        _repo.GetByIdAsync(staff.Id, Arg.Any<CancellationToken>()).Returns(staff);
+
+        var result = await _sut.Handle(new GetStaffMemberByIdQuery(staff.Id), CancellationToken.None);
+
+        result.Value.Access.Should().BeNull();
     }
 
     [Fact]
@@ -91,3 +121,31 @@ public class DeleteStaffMemberCommandHandlerTests
     }
 }
 
+public class ListStaffMembersQueryHandlerAccessTests
+{
+    private readonly IStaffRepository _repo = Substitute.For<IStaffRepository>();
+    private readonly IUserAccountDirectory _accounts = Substitute.For<IUserAccountDirectory>();
+
+    // People-merge plan 2.4: one account lookup per page, never one per row.
+    [Fact]
+    public async Task Handle_LooksUpAllLinkedAccountsInOneCall()
+    {
+        var staff = Enumerable.Range(0, 20).Select(i =>
+        {
+            var s = StaffMember.Create(StaffType.Dentist, $"Dr{i}", "X", $"d{i}@c.com", null, null);
+            if (i % 2 == 0) s.LinkUser(Guid.NewGuid());
+            return s;
+        }).ToList();
+        _repo.ListAsync(default, default, default, default, default, default).ReturnsForAnyArgs((staff, staff.Count));
+        _accounts.GetSummariesAsync(default!, default).ReturnsForAnyArgs(
+            staff.Where(s => s.UserId is not null)
+                .ToDictionary(s => s.UserId!.Value, s => new StaffAccessSummary(s.UserId!.Value, "Dentist", true, false, null)));
+        var sut = new ListStaffMembersQueryHandler(_repo, _accounts);
+
+        var result = await sut.Handle(new ListStaffMembersQuery(null, null, 1, 20, null), CancellationToken.None);
+
+        await _accounts.ReceivedWithAnyArgs(1).GetSummariesAsync(default!, default);
+        await _accounts.Received(1).GetSummariesAsync(Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 10), Arg.Any<CancellationToken>());
+        result.Value.Items.Count(i => i.Access is not null).Should().Be(10);
+    }
+}

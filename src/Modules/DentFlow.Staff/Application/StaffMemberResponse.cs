@@ -1,4 +1,5 @@
 ﻿﻿using System.Text.Json.Serialization;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Staff.Domain;
 
 namespace DentFlow.Staff.Application;
@@ -26,9 +27,14 @@ public record StaffMemberResponse(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     bool IsBookable,
+    // The person's sign-in account, or null when they can't sign in (people-merge plan 2.4).
+    StaffAccessSummary? Access = null,
     // Only on the response that created the account, and only once; omitted elsewhere.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? TempPassword = null)
 {
+    public static StaffMemberResponse FromEntity(StaffMember s, StaffAccessSummary? access) =>
+        FromEntity(s) with { Access = access };
+
     public static StaffMemberResponse FromEntity(StaffMember s) => new(
         s.Id,
         s.StaffType,

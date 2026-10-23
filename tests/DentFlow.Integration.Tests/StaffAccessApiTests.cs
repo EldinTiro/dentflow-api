@@ -128,4 +128,30 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
         var list = await owner.GetFromJsonAsync<Paged>("/api/v1/staff?pageSize=100");
         list!.Items.Should().NotContain(s => s.Email == email, "the profile insert is rolled back with the failed account");
     }
+
+    // ── 2.4: access summary on staff responses ────────────────────────
+
+    private record AccessDto(Guid UserId, string? Role, bool IsActive, bool MustChangePassword, DateTime? LastLoginAt);
+    private record StaffWithAccess(Guid Id, string? Email, AccessDto? Access);
+    private record PagedWithAccess(List<StaffWithAccess> Items);
+
+    [Fact]
+    public async Task List_ShowsAccessForLinkedProfiles_AndNullForOthers()
+    {
+        var (_, _, owner) = await ClinicAsync();
+        var (linkedId, _) = await ProfileAsync(owner);
+        var (plainId, _) = await ProfileAsync(owner);
+        await owner.PostAsJsonAsync($"/api/v1/staff/{linkedId}/access", new { role = Roles.DentalNurse });
+
+        var list = await owner.GetFromJsonAsync<PagedWithAccess>("/api/v1/staff?pageSize=100");
+
+        var linked = list!.Items.Single(s => s.Id == linkedId).Access;
+        linked.Should().NotBeNull();
+        linked!.Role.Should().Be(Roles.DentalNurse);
+        linked.IsActive.Should().BeTrue();
+        linked.MustChangePassword.Should().BeTrue();
+        linked.LastLoginAt.Should().BeNull();
+        list.Items.Single(s => s.Id == plainId).Access.Should().BeNull();
+        (await owner.GetFromJsonAsync<StaffWithAccess>($"/api/v1/staff/{linkedId}"))!.Access!.Role.Should().Be(Roles.DentalNurse);
+    }
 }
