@@ -11,4 +11,10 @@ internal sealed class AppointmentReader(ApplicationDbContext db) : IAppointmentR
 
     public Task<int> CountUpcomingForPatientAsync(Guid patientId, DateTime now, CancellationToken ct) =>
         db.Appointments.CountAsync(a => a.PatientId == patientId && Open.Contains(a.Status) && a.EndAt > now, ct);
+
+    public Task<int> CountUpcomingForProviderAsync(Guid providerId, DateTime now, CancellationToken ct) =>
+        db.Appointments.CountAsync(a => a.ProviderId == providerId && Open.Contains(a.Status) && a.EndAt > now, ct);
+
+    public Task<bool> ProviderHasAnyAsync(Guid providerId, CancellationToken ct) =>
+        db.Appointments.AnyAsync(a => a.ProviderId == providerId, ct);
 }

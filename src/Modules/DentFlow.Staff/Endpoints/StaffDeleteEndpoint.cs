@@ -13,7 +13,7 @@ public class StaffDeleteEndpoint(ISender sender) : EndpointWithoutRequest
         Delete("/staff/{id}");
         Policies(Permission.PeopleManage);
         Version(1);
-        Summary(s => s.Summary = "Soft-delete a staff member");
+        Summary(s => s.Summary = "Soft-delete a staff profile with no appointments; 409 Staff.HasHistory otherwise");
     }
 
     public override async Task HandleAsync(CancellationToken ct)

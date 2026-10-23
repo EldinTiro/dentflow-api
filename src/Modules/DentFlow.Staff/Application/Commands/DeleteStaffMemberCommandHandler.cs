@@ -9,6 +9,7 @@ namespace DentFlow.Staff.Application.Commands;
 public class DeleteStaffMemberCommandHandler(
     IStaffRepository staffRepository,
     IUserAccountLifecycle accounts,
+    IAppointmentReader appointments,
     ITransactionRunner transaction)
     : IRequestHandler<DeleteStaffMemberCommand, ErrorOr<Deleted>>
 {
@@ -19,6 +20,10 @@ public class DeleteStaffMemberCommandHandler(
         var staffMember = await staffRepository.GetByIdAsync(command.Id, cancellationToken);
         if (staffMember is null)
             return StaffErrors.NotFound;
+
+        // Delete is for a profile created by mistake; anyone with appointments is deactivated (D12).
+        if (await appointments.ProviderHasAnyAsync(staffMember.Id, cancellationToken))
+            return StaffErrors.HasHistory;
 
         // The account follows the profile (people-merge plan D4), or neither changes.
         return await transaction.ExecuteAsync<Deleted>(async ct =>

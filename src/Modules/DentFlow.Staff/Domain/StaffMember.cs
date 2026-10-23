@@ -93,18 +93,24 @@ public class StaffMember : TenantAuditableEntity
         SetUpdated();
     }
 
-    public void Deactivate()
+    public ErrorOr<Success> Deactivate()
     {
+        if (!IsActive) return StaffErrors.AlreadyInactive;
+
         IsActive = false;
         TerminationDate = DateOnly.FromDateTime(DateTime.UtcNow);
         SetUpdated();
+        return Result.Success;
     }
 
-    public void Activate()
+    public ErrorOr<Success> Activate()
     {
+        if (IsActive) return StaffErrors.AlreadyActive;
+
         IsActive = true;
         TerminationDate = null;
         SetUpdated();
+        return Result.Success;
     }
 
     public string FullName => $"{FirstName} {LastName}";

@@ -39,6 +39,24 @@ public static class StaffErrors
     public static readonly Error InvalidAccessRole =
         Error.Validation("Staff.InvalidAccessRole", "Choose one of the clinic roles: owner, dentist, dental nurse or receptionist.");
 
+    // ── Deactivate instead of delete (people-merge plan B6) ─────────────
+
+    public static readonly Error AlreadyInactive =
+        Error.Conflict("Staff.AlreadyInactive", "This person is already inactive.");
+
+    public static readonly Error AlreadyActive =
+        Error.Conflict("Staff.AlreadyActive", "This person is already active.");
+
+    /// <summary>The count travels as metadata so the client can say how many (D10).</summary>
+    public static Error HasUpcomingAppointments(int count) =>
+        Error.Conflict(
+            "Staff.HasUpcomingAppointments",
+            $"This person has {count} upcoming appointment(s). Cancel or move them first.",
+            new Dictionary<string, object> { ["count"] = count });
+
+    public static readonly Error HasHistory =
+        Error.Conflict("Staff.HasHistory", "This person has appointments. Deactivate them instead.");
+
     public static readonly Error BlockedTimeNotFound =
         Error.NotFound("Staff.BlockedTimeNotFound", "Staff blocked time was not found.");
 }

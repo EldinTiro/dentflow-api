@@ -84,13 +84,14 @@ public class DeleteStaffMemberCommandHandlerTests
 {
     private readonly IStaffRepository _repo = Substitute.For<IStaffRepository>();
     private readonly IUserAccountLifecycle _accounts = Substitute.For<IUserAccountLifecycle>();
+    private readonly IAppointmentReader _appointments = Substitute.For<IAppointmentReader>();
     private readonly DentFlow.Staff.Tests.Support.PassThroughTransactionRunner _transaction = new();
     private readonly DeleteStaffMemberCommandHandler _sut;
     private static readonly AccountActor Owner = new(Guid.NewGuid(), ["ClinicOwner"]);
 
     public DeleteStaffMemberCommandHandlerTests()
     {
-        _sut = new DeleteStaffMemberCommandHandler(_repo, _accounts, _transaction);
+        _sut = new DeleteStaffMemberCommandHandler(_repo, _accounts, _appointments, _transaction);
         _accounts.DeactivateAsync(default, default!, default).ReturnsForAnyArgs(Result.Success);
     }
 
