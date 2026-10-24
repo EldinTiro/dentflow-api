@@ -178,10 +178,35 @@ public abstract class TenantAuditableEntity : BaseEntity, ISoftDeletable
 - Token family tracking � reuse of a revoked token revokes the entire family
 - Configurable lifetime: `Jwt:RefreshTokenExpiryDays` (default: 7)
 
-### Roles
-`SuperAdmin` | `ClinicOwner` | `Dentist` | `Hygienist` | `Receptionist` | `BillingStaff` | `ReadOnly`
+### Roles and permissions
+`SuperAdmin` | `ClinicOwner` | `Dentist` | `DentalNurse` | `Receptionist` (`Domain/Identity/Roles.cs`)
 
-Two-layer model: coarse Roles + fine-grained Permission overrides per user.
+What each role may do is decided in one map, `RolePermissions`; endpoints ask for a permission
+with `Policies(Permission.X)`. There are **no per-user overrides**.
+
+| Permission | Held by |
+|---|---|
+| `dashboard.view` | every clinic role, SuperAdmin |
+| `billing.view` | every clinic role |
+| `billing.collect` | ClinicOwner, DentalNurse, Receptionist |
+| `finance.view`, `finance.adjust` | ClinicOwner |
+| `people.manage` — staff profiles and their sign-in | ClinicOwner |
+| `patients.manage` — patients and their medical data | every clinic role (not SuperAdmin) |
+
+### People: staff profile with optional sign-in
+A person is one `StaffMember`; an `ApplicationUser` is linked to it (`StaffMember.UserId`, unique
+per clinic) only when the person can sign in. Profile and account change together through
+cross-module interfaces in `DentFlow.Application`, inside one `ITransactionRunner` transaction:
+`IUserAccountDirectory` (access summary on staff responses), `IUserAccountLifecycle`
+(deactivate / rename, reusing `UserManagementGuard`), `IStaffDirectory` (rename from the
+account side). `StaffAccountBackfill` links or creates a profile for every clinic account at
+startup. `isBookable` on the staff response decides who appears in booking.
+
+### Deactivate instead of delete
+Patients and staff are deactivated (reversible, history kept); deactivation is refused while
+appointments are ahead (`IAppointmentReader`, 409 with the count as error metadata). Delete
+remains only for records created by mistake with no history (`IPatientHistoryReader`,
+`Staff.HasHistory`). Allergies and emergency contacts are soft-deleted.
 
 ### Identity Provider
 - Default: **ASP.NET Core Identity** (no Keycloak / Auth0 / Cognito)

@@ -157,9 +157,26 @@ if (patient is null) return PatientErrors.NotFound;
 - **Suspended clinics**: a deactivated tenant cannot log in (403 `Tenant.Inactive`) or refresh, and `SuspendedTenantMiddleware` answers 403 to its existing access tokens
 - **Temporary passwords**: users created by invite/provisioning or reset by an admin get `MustChangePassword`; their token carries `pwd_change` and `PasswordChangeRequiredMiddleware` blocks everything but `/auth/*` and `/users/me*` until they change it
 - **User-management guards** live in the Identity handlers (`UserManagementGuard`): no self role-change/deactivation, a clinic keeps an active owner, the platform keeps an active SuperAdmin, only owners touch owners
-- Roles — **8**, defined in `Domain/Identity/Roles.cs`: `SuperAdmin`, `ClinicOwner`, `ClinicAdmin`, `Dentist`, `Hygienist`, `Receptionist`, `BillingStaff`, `ReadOnly`
-- Endpoint-level auth: FastEndpoints `.Roles(...)`. **Only use constants from `Roles.cs`** — `DashboardStatsEndpoint` currently passes `"Admin"` and `"OfficeManager"`, which no user can ever hold (`OfficeManager` is a *staff type* from `StaffTypes.cs`, not an auth role)
+- Roles — **5**, defined in `Domain/Identity/Roles.cs`: `SuperAdmin`, `ClinicOwner`, `Dentist`, `DentalNurse`, `Receptionist` (`Roles.TenantRoles` = the four clinic roles). Retired roles (`ClinicAdmin`, `Hygienist`, `BillingStaff`, `ReadOnly`) are mapped or deactivated at startup by `SuperAdminSeeder.SyncRolesAsync`
+- **Permissions** (`Domain/Identity/Permission.cs`) and who holds them (`RolePermissions`) are the one place that says who may do what. Write endpoints use `Policies(Permission.X)`, not role strings: `people.manage` (owner — staff and their sign-in), `patients.manage` (every clinic role, not SuperAdmin), `billing.view` / `billing.collect`, `finance.view` / `finance.adjust` (owner), `dashboard.view`. Reads open to every clinic role use `Roles([.. Roles.TenantRoles])`. `RoleNameRules` (architecture tests) rejects unknown role strings
+- Endpoint-level auth on endpoints that are not converted yet still uses FastEndpoints `.Roles(...)` with role names — **only use constants from `Roles.cs`** (`OfficeManager` is a *staff type*, not an auth role)
 - The `tid` claim is issued at login but is **not** validated against the resolved subdomain anywhere. Do not assume client-supplied tenant is checked
+
+### People: one staff profile, optional sign-in (people-merge plan)
+
+- A person is a `StaffMember`. Signing in is an **optional** `ApplicationUser` linked by `StaffMember.UserId` (unique per clinic). There is no separate Team list
+- `POST /staff { …, access?: { role } }` creates profile + account in one transaction and returns `tempPassword` once; `POST /staff/{id}/access { role }` gives access later. The linked email is the login email and can't be edited on the profile (`Staff.EmailLockedByAccess`); names stay in sync both ways
+- Staff responses carry `access` (`StaffAccessSummary`: role, active, must-change-password, last sign-in) and `isBookable` (active + clinical staff type) — clients use `isBookable`, never their own staff-type lists
+- Clinic-side account actions: `PUT /users/{id}/role`, `PUT /users/{id}/status`, `POST /users/{id}/reset-password` (all `people.manage`, guarded by `UserManagementGuard`)
+- Cross-module seams in `DentFlow.Application`: `ITransactionRunner` (one transaction across modules; joins an open one), `IUserAccountDirectory` (access summaries), `IUserAccountLifecycle` (deactivate / rename an account with the guards), `IStaffDirectory`, `IAppointmentReader`, `IPatientHistoryReader`, `IPatientDirectory`
+- `StaffAccountBackfill` runs at startup after the role sync: every clinic account gets exactly one profile (link by email, else create)
+
+### Deactivate instead of delete
+
+- Patients: `POST /patients/{id}/deactivate { reason? }` / `reactivate` (any clinic role). Refused while appointments are ahead: 409 `Patient.HasUpcomingAppointments` with the count as error metadata (`"Patient.HasUpcomingAppointments.count"`). Inactive patients are left out of `GET /patients` (default `status=Active`; `status=all` lifts it), search, and booking (409 `Patient.Inactive`). `DELETE /patients/{id}` only for a duplicate without history, else 409 `Patient.HasHistory`
+- Staff: `POST /staff/{id}/deactivate` / `reactivate` (owner). Deactivation also deactivates the linked account in the same transaction (self / last owner refused); reactivation leaves the account off. `GET /staff` defaults to active (`isActive=all` for everyone — use it wherever past appointments need provider names). `DELETE /staff/{id}` only without appointments, else 409 `Staff.HasHistory`
+- Allergies and emergency contacts are soft-deleted
+- `SendResultErrorsAsync` sends error metadata as extra `{ name: "code.key", reason: value }` entries
 
 ## Multi-Tenancy Rules
 
