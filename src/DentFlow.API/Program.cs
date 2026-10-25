@@ -211,6 +211,7 @@ app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseMultiTenant();
 app.UseMiddleware<DentFlow.API.Middleware.SuspendedTenantMiddleware>();
+app.UseMiddleware<DentFlow.API.Middleware.DeactivatedUserMiddleware>();
 app.UseMiddleware<DentFlow.API.Middleware.PasswordChangeRequiredMiddleware>();
 app.UseAuthorization();
 
