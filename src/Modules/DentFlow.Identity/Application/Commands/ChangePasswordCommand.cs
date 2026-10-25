@@ -21,6 +21,10 @@ public class ChangePasswordCommandHandler(UserManager<ApplicationUser> userManag
         if (user is null)
             return IdentityErrors.UserNotFound;
 
+        // DT-04: keeping the temporary password means whoever handed it out still knows it.
+        if (command.NewPassword == command.CurrentPassword)
+            return IdentityErrors.PasswordUnchanged;
+
         var result = await userManager.ChangePasswordAsync(user, command.CurrentPassword, command.NewPassword);
         if (!result.Succeeded)
             return result.Errors

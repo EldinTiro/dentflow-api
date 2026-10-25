@@ -76,6 +76,21 @@ public class TemporaryPasswordTests(DentFlowAppFactory factory)
             "the app still needs the profile to render the change-password screen");
     }
 
+    // DT-04: "changing" to the same temporary password cleared the flag, and whoever
+    // handed it out still knew the password
+    [Fact]
+    public async Task ChangingToTheTemporaryPasswordItself_IsRefused_AndTheChangeIsStillRequired()
+    {
+        var (client, invite, _) = await InvitedUserSignedInAsync(Roles.DentalNurse);
+
+        var change = await client.PostAsJsonAsync("/api/v1/users/me/change-password",
+            new { currentPassword = invite.TempPassword, newPassword = invite.TempPassword });
+
+        change.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await change.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Auth.PasswordUnchanged");
+        (await LoginAsync(client, invite.Email, invite.TempPassword)).MustChangePassword.Should().BeTrue();
+    }
+
     [Fact]
     public async Task AfterChangingThePassword_TheUserGetsFullAccess()
     {

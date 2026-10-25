@@ -31,6 +31,9 @@ public static class IdentityErrors
     public static readonly Error PasswordChangeRequired = Error.Forbidden(
         "Auth.PasswordChangeRequired", "Please choose a new password before continuing.");
 
+    public static readonly Error PasswordUnchanged = Error.Validation(
+        "Auth.PasswordUnchanged", "The new password must be different from the current one.");
+
     public static readonly Error UserNotFound = Error.NotFound(
         "Auth.UserNotFound", "User not found.");
 
