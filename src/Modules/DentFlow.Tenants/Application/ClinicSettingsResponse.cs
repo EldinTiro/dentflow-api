@@ -2,16 +2,14 @@ using DentFlow.Domain.Tenants;
 
 namespace DentFlow.Tenants.Application;
 
+/// <summary>
+/// The weekly schedule is the only source of opening hours (DT-13). The legacy
+/// WorkdayStart/End columns are no longer sent: they disagreed with the schedule.
+/// </summary>
 public record ClinicSettingsResponse(
-    string WorkdayStart,
-    string WorkdayEnd,
     int SlotDurationMinutes,
     string? WeeklyScheduleJson)
 {
     public static ClinicSettingsResponse FromEntity(Tenant t) =>
-        new(
-            t.WorkdayStart.ToString("HH:mm"),
-            t.WorkdayEnd.ToString("HH:mm"),
-            t.SlotDurationMinutes,
-            t.WeeklyScheduleJson);
+        new(t.SlotDurationMinutes, t.WeeklyScheduleJson);
 }
