@@ -218,9 +218,9 @@ public class VoidInvoiceCommandHandler(IInvoiceRepository repo)
     {
         var invoice = await repo.GetByIdWithDetailsAsync(cmd.InvoiceId, ct);
         if (invoice is null) return BillingErrors.InvoiceNotFound;
-        if (invoice.Status == InvoiceStatus.Paid) return BillingErrors.CannotVoidPaidInvoice;
+        var voided = invoice.Void();
+        if (voided.IsError) return voided.Errors;
 
-        invoice.Void();
         await repo.UpdateAsync(invoice, ct);
         return InvoiceResponse.FromEntity(invoice);
     }

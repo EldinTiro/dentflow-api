@@ -109,11 +109,49 @@ public class InvoiceDomainTests
     }
 
     [Fact]
-    public void Void_SetsStatusToVoid()
+    public void Void_SetsStatusToVoid_AndNothingIsOwed()
+    {
+        var invoice = CreateInvoice();
+        invoice.AddLineItem(Line(invoice.Id, 45m));
+
+        invoice.Void().IsError.Should().BeFalse();
+
+        invoice.Status.Should().Be(InvoiceStatus.Void);
+        invoice.BalanceDue.Should().Be(0m);
+        invoice.IsOverdueAt(DateTime.UtcNow.AddYears(1)).Should().BeFalse();
+    }
+
+    // DT-03: a part-paid invoice was voided and its 10 KM stayed in revenue and cash-up
+    [Fact]
+    public void Void_WithAPartPayment_IsRefused_AndChangesNothing()
+    {
+        var invoice = CreateInvoice();
+        invoice.AddLineItem(Line(invoice.Id, 45m));
+        invoice.AddPayment(Payment(invoice.Id, 10m));
+
+        invoice.Void().FirstError.Code.Should().Be(BillingErrors.CannotVoidWithPayments.Code);
+
+        invoice.Status.Should().Be(InvoiceStatus.PartiallyPaid);
+        invoice.BalanceDue.Should().Be(35m);
+    }
+
+    [Fact]
+    public void Void_WhenFullyPaid_IsRefused()
+    {
+        var invoice = CreateInvoice();
+        invoice.AddLineItem(Line(invoice.Id, 45m));
+        invoice.AddPayment(Payment(invoice.Id, 45m));
+
+        invoice.Void().FirstError.Code.Should().Be(BillingErrors.CannotVoidPaidInvoice.Code);
+    }
+
+    [Fact]
+    public void Void_Twice_IsRefused()
     {
         var invoice = CreateInvoice();
         invoice.Void();
-        invoice.Status.Should().Be(InvoiceStatus.Void);
+
+        invoice.Void().FirstError.Code.Should().Be(BillingErrors.CannotModifyVoidedInvoice.Code);
     }
 
     [Fact]
