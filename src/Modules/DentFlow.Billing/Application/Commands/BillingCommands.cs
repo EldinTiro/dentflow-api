@@ -289,7 +289,7 @@ public class RecordPaymentCommandValidator : AbstractValidator<RecordPaymentComm
     public RecordPaymentCommandValidator()
     {
         RuleFor(x => x.InvoiceId).NotEmpty();
-        RuleFor(x => x.Amount).GreaterThanOrEqualTo(0.01m)
+        RuleFor(x => x.Amount).GreaterThanOrEqualTo(0.01m).WithMessage("The amount must be at least 0.01.")
             .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
         RuleFor(x => x.Method)
             .NotEmpty()
