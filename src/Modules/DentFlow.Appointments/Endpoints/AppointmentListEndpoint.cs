@@ -25,11 +25,15 @@ public class AppointmentListEndpoint(ISender sender) : EndpointWithoutRequest<Pa
         var dateToStr = Query<string?>("dateTo", isRequired: false);
         var pageStr = Query<string?>("page", isRequired: false);
         var pageSizeStr = Query<string?>("pageSize", isRequired: false);
-        var page = int.TryParse(pageStr, out var p) ? p : 1;
-        var pageSize = Math.Min(int.TryParse(pageSizeStr, out var ps) ? ps : 50, 200);
+        var (page, pageSize) = Paging.Normalize(pageStr, pageSizeStr, defaultSize: 50, max: 200);
 
-        var dateFrom = DateRangeBound.Parse(dateFromStr, endOfDay: false);
-        var dateTo = DateRangeBound.Parse(dateToStr, endOfDay: true);
+        if (!DateRangeBound.TryParse(dateFromStr, endOfDay: false, out var dateFrom)
+            || !DateRangeBound.TryParse(dateToStr, endOfDay: true, out var dateTo))
+        {
+            await this.SendResultErrorsAsync(
+                [ErrorOr.Error.Validation("Appointment.InvalidDateFilter", "dateFrom and dateTo must be dates (YYYY-MM-DD) or ISO instants.")], ct);
+            return;
+        }
 
         var result = await sender.Send(
             new ListAppointmentsQuery(patientId, providerId, dateFrom, dateTo, status, page, pageSize), ct);

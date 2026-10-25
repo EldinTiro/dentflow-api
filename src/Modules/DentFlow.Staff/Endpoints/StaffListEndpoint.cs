@@ -29,8 +29,7 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
             : bool.TryParse(isActiveStr, out var active) ? active : true;
         var pageStr = Query<string?>("page", isRequired: false);
         var pageSizeStr = Query<string?>("pageSize", isRequired: false);
-        var page = int.TryParse(pageStr, out var p) ? p : 1;
-        var pageSize = Math.Min(int.TryParse(pageSizeStr, out var ps) ? ps : 20, 100);
+        var (page, pageSize) = Paging.Normalize(pageStr, pageSizeStr, defaultSize: 20, max: 100);
 
         StaffType? staffType = Enum.TryParse<StaffType>(staffTypeStr, ignoreCase: true, out var parsed)
             ? parsed
