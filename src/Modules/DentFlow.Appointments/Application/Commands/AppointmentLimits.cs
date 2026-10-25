@@ -6,4 +6,10 @@ public static class AppointmentLimits
     public static readonly TimeSpan MaxLength = TimeSpan.FromHours(8);
     public const int BookingHorizonYears = 2;
     public const int MaxNotesLength = 2000;
+
+    /// <summary>
+    /// DT-09: arrival statuses (checked in, started, finished, no-show) only make sense close
+    /// to the visit. The server has no clinic time zone, so "the appointment day" is a window.
+    /// </summary>
+    public static readonly TimeSpan ArrivalWindowBeforeStart = TimeSpan.FromHours(12);
 }

@@ -182,6 +182,60 @@ public class AppointmentStatusCommandHandlerTests
 {
     private readonly IAppointmentRepository _repo = Substitute.For<IAppointmentRepository>();
 
+    private Appointment ExistingAt(DateTime startAt)
+    {
+        var appointment = Appointment.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), startAt, startAt.AddMinutes(30));
+        _repo.GetByIdAsync(appointment.Id, Arg.Any<CancellationToken>()).Returns(appointment);
+        return appointment;
+    }
+
+    // DT-09: treatment could be started on a visit 15 days ahead
+    [Theory]
+    [InlineData(AppointmentStatus.CheckedIn)]
+    [InlineData(AppointmentStatus.InProgress)]
+    [InlineData(AppointmentStatus.NoShow)]
+    public async Task UpdateStatus_DaysBeforeTheVisit_IsRefused(string status)
+    {
+        var appointment = ExistingAt(DateTime.UtcNow.AddDays(15));
+
+        var result = await new UpdateAppointmentStatusCommandHandler(_repo)
+            .Handle(new UpdateAppointmentStatusCommand(appointment.Id, status), CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Appointment.NotYetDue");
+        appointment.Status.Should().Be(AppointmentStatus.Scheduled);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_CheckInEarlierTheSameDay_IsAllowed()
+    {
+        var appointment = ExistingAt(DateTime.UtcNow.AddHours(3));
+
+        var result = await new UpdateAppointmentStatusCommandHandler(_repo)
+            .Handle(new UpdateAppointmentStatusCommand(appointment.Id, AppointmentStatus.CheckedIn), CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Override_ToTheSameStatus_IsRefused_AndLeavesNoAuditEntry()
+    {
+        var appointment = ExistingAt(DateTime.UtcNow.AddHours(1));
+
+        var result = await new OverrideAppointmentStatusCommandHandler(_repo)
+            .Handle(new OverrideAppointmentStatusCommand(appointment.Id, AppointmentStatus.Scheduled, "Fix", null), CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Appointment.SameStatus");
+        await _repo.DidNotReceive().AddHistoryAsync(Arg.Any<AppointmentStatusHistory>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void Override_WithoutAReason_IsRejected(string? reason) =>
+        new OverrideAppointmentStatusCommandValidator()
+            .Validate(new OverrideAppointmentStatusCommand(Guid.NewGuid(), AppointmentStatus.Completed, reason, null))
+            .IsValid.Should().BeFalse();
+
     [Fact]
     public async Task CancelAppointment_CompletedAppointment_ReturnsError()
     {

@@ -16,6 +16,12 @@ public static class AppointmentErrors
     public static readonly Error PatientConflict =
         Error.Conflict("Appointment.PatientConflict", "This patient already has an appointment at this time.");
 
+    public static readonly Error NotYetDue =
+        Error.Conflict("Appointment.NotYetDue", "This appointment is not due yet. Check-in and treatment start on the day of the visit.");
+
+    public static readonly Error SameStatus =
+        Error.Validation("Appointment.SameStatus", "The appointment already has this status.");
+
     public static readonly Error PatientInactive =
         Error.Conflict("Patient.Inactive", "This patient is inactive. Reactivate them before booking.");
 

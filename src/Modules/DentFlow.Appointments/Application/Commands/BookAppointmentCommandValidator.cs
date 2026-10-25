@@ -50,3 +50,12 @@ public class UpdateAppointmentNotesCommandValidator : AbstractValidator<UpdateAp
     public UpdateAppointmentNotesCommandValidator() =>
         RuleFor(x => x.Notes).MaximumLength(AppointmentLimits.MaxNotesLength);
 }
+
+/// <summary>DT-09: an override bypasses the workflow, so it must say why.</summary>
+public class OverrideAppointmentStatusCommandValidator : AbstractValidator<OverrideAppointmentStatusCommand>
+{
+    public OverrideAppointmentStatusCommandValidator() =>
+        RuleFor(x => x.Reason)
+            .Must(r => !string.IsNullOrWhiteSpace(r)).WithMessage("Give a reason for the status override.")
+            .MaximumLength(500);
+}
