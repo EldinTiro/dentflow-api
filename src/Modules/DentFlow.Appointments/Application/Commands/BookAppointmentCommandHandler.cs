@@ -10,7 +10,8 @@ public class BookAppointmentCommandHandler(
     IAppointmentRepository appointmentRepository,
     IAppointmentTypeRepository appointmentTypeRepository,
     IProviderBlockedTimeChecker blockedTimeChecker,
-    IPatientDirectory patients)
+    IPatientDirectory patients,
+    IStaffDirectory staff)
     : IRequestHandler<BookAppointmentCommand, ErrorOr<AppointmentResponse>>
 {
     public async Task<ErrorOr<AppointmentResponse>> Handle(
@@ -22,6 +23,11 @@ public class BookAppointmentCommandHandler(
 
         if (await patients.IsInactiveAsync(command.PatientId, cancellationToken))
             return AppointmentErrors.PatientInactive;
+
+        // The provider must be one of this clinic's staff (DT-01/02).
+        var provider = await staff.GetBookabilityAsync(command.ProviderId, cancellationToken);
+        if (provider is null)
+            return AppointmentErrors.ProviderNotFound;
 
         var appointmentType = await appointmentTypeRepository.GetByIdAsync(command.AppointmentTypeId, cancellationToken);
         if (appointmentType is null)

@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using DentFlow.Billing.Application.Interfaces;
 using DentFlow.Billing.Domain;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Billing.Application.Commands;
 
@@ -21,7 +22,7 @@ public record CreateInvoiceCommand(
     DateTime? DueDate,
     string? Notes,
     IReadOnlyList<CreateInvoiceLineItemRequest> LineItems)
-    : IRequest<ErrorOr<InvoiceResponse>>;
+    : IPatientScoped, IRequest<ErrorOr<InvoiceResponse>>;
 
 public class CreateInvoiceCommandHandler(IInvoiceRepository repo)
     : IRequestHandler<CreateInvoiceCommand, ErrorOr<InvoiceResponse>>

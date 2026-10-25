@@ -15,4 +15,10 @@ internal sealed class StaffDirectory(ApplicationDbContext db) : IStaffDirectory
         staff.Rename(firstName, lastName);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<StaffBookability?> GetBookabilityAsync(Guid staffId, CancellationToken ct)
+    {
+        var staff = await db.Set<StaffMember>().AsNoTracking().FirstOrDefaultAsync(s => s.Id == staffId, ct);
+        return staff is null ? null : new StaffBookability(staff.IsActive, staff.IsBookable);
+    }
 }

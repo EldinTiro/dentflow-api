@@ -15,11 +15,13 @@ public class BookAppointmentCommandHandlerTests
     private readonly IAppointmentTypeRepository _typeRepo = Substitute.For<IAppointmentTypeRepository>();
     private readonly IProviderBlockedTimeChecker _blockedTimeChecker = Substitute.For<IProviderBlockedTimeChecker>();
     private readonly IPatientDirectory _patients = Substitute.For<IPatientDirectory>();
+    private readonly IStaffDirectory _staff = Substitute.For<IStaffDirectory>();
     private readonly BookAppointmentCommandHandler _sut;
 
     public BookAppointmentCommandHandlerTests()
     {
-        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo, _blockedTimeChecker, _patients);
+        _staff.GetBookabilityAsync(default, default).ReturnsForAnyArgs(new StaffBookability(true, true));
+        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo, _blockedTimeChecker, _patients, _staff);
     }
 
     private static BookAppointmentCommand ValidCommand(DateTime? startAt = null, DateTime? endAt = null)

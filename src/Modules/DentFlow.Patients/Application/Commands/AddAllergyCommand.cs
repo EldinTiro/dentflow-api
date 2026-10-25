@@ -1,5 +1,6 @@
 using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Patients.Application.Commands;
 
@@ -8,4 +9,4 @@ public record AddAllergyCommand(
     string Allergen,
     string? Reaction,
     string? Severity,
-    string? Notes) : IRequest<ErrorOr<AllergyResponse>>;
+    string? Notes) : IPatientScoped, IRequest<ErrorOr<AllergyResponse>>;

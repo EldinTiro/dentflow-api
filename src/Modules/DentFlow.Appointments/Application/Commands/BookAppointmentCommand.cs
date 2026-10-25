@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Appointments.Application.Commands;
 
@@ -13,5 +14,5 @@ public record BookAppointmentCommand(
     string? Notes,
     Guid? OperatoryId,
     bool IsNewPatient,
-    string Source) : IRequest<ErrorOr<AppointmentResponse>>;
+    string Source) : IPatientScoped, IRequest<ErrorOr<AppointmentResponse>>;
 

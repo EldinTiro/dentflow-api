@@ -77,10 +77,11 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
             source = "Staff"
         });
 
-        // Same provider, overlapping time
+        // Same provider, overlapping time, another (real) patient — a random id is 404 since DT-02
+        var (otherPatientId, _, _) = await SeedBookingPrerequisites();
         var response = await _admin.PostAsJsonAsync("/api/v1/appointments", new
         {
-            patientId = Guid.NewGuid(), // different patient
+            patientId = otherPatientId,
             providerId,
             appointmentTypeId = typeId,
             startAt = start.AddMinutes(30).ToString("o"),

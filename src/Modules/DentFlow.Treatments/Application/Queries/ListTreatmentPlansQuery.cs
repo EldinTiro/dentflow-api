@@ -1,6 +1,7 @@
 ﻿using ErrorOr;
 using MediatR;
 using DentFlow.Treatments.Domain;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Treatments.Application.Queries;
 
@@ -9,4 +10,4 @@ public record ListTreatmentPlansQuery(
     TreatmentPlanStatus? Status = null,
     int Page = 1,
     int PageSize = 20
-) : IRequest<ErrorOr<PagedResult<TreatmentPlanResponse>>>;
+) : IPatientScoped, IRequest<ErrorOr<PagedResult<TreatmentPlanResponse>>>;

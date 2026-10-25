@@ -1,5 +1,6 @@
 using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Patients.Application.Commands;
 
@@ -19,4 +20,4 @@ public record UpsertMedicalHistoryCommand(
     string? GeneralNotes,
     string? CurrentMedications,
     string? PhysicianName,
-    string? PhysicianPhone) : IRequest<ErrorOr<MedicalHistoryResponse>>;
+    string? PhysicianPhone) : IPatientScoped, IRequest<ErrorOr<MedicalHistoryResponse>>;

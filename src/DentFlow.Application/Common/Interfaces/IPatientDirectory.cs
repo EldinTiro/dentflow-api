@@ -13,4 +13,7 @@ public interface IPatientDirectory
     /// An unknown id is not "inactive" — callers that need existence check it themselves.
     /// </summary>
     Task<bool> IsInactiveAsync(Guid patientId, CancellationToken ct);
+
+    /// <summary>Whether the patient exists (not deleted) in the caller's clinic.</summary>
+    Task<bool> ExistsAsync(Guid patientId, CancellationToken ct);
 }

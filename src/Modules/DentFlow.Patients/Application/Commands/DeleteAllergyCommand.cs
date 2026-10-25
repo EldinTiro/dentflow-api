@@ -1,7 +1,8 @@
 using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Patients.Application.Commands;
 
 public record DeleteAllergyCommand(Guid PatientId, Guid AllergyId)
-    : IRequest<ErrorOr<Deleted>>;
+    : IPatientScoped, IRequest<ErrorOr<Deleted>>;
