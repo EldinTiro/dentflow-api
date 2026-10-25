@@ -37,7 +37,8 @@ public class AppointmentCancelEndpoint(ISender sender) : Endpoint<CancelAppointm
     public override void Configure()
     {
         Post("/appointments/{id}/cancel");
-        Roles("ClinicOwner", "Receptionist", "DentalNurse", "SuperAdmin");
+        // Every clinic role: a patient with a visit ahead can't be deactivated (D10, DT-12).
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Cancel an appointment");
     }
