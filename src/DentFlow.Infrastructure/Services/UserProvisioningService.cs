@@ -19,7 +19,8 @@ public class UserProvisioningService(
     {
         var existing = await userManager.FindByEmailAsync(email);
         if (existing is not null)
-            return Error.Conflict("User.EmailAlreadyExists", $"A user with email '{email}' already exists.");
+            // DT-21: don't tell a clinic that this address has an account somewhere on DentFlow.
+            return Error.Conflict("User.EmailAlreadyExists", "This email can't be used for a new sign-in. Use a different email.");
 
         var user = new ApplicationUser
         {
