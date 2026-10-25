@@ -1,4 +1,4 @@
-﻿﻿using ErrorOr;
+﻿using ErrorOr;
 using MediatR;
 using DentFlow.Staff.Domain;
 
@@ -12,5 +12,8 @@ public record CreateStaffMemberCommand(
     string? Phone,
     DateOnly? HireDate,
     string? Specialty,
-    string? ColorHex) : IRequest<ErrorOr<StaffMemberResponse>>;
+    string? ColorHex,
+    StaffAccessRequest? Access = null) : IRequest<ErrorOr<StaffMemberResponse>>;
 
+/// <summary>"Can sign in": create the account together with the profile (people-merge plan 2.3).</summary>
+public record StaffAccessRequest(string Role);

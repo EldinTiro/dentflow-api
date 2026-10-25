@@ -2,13 +2,13 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using DentFlow.Domain.Identity;
-using DentFlow.Infrastructure.Persistence;
+using DentFlow.Application.Common.Interfaces;
 
 namespace DentFlow.Identity.Application.Commands;
 
 public record ChangeUserRoleCommand(Guid UserId, string NewRole, UserManagementActor Actor) : IRequest<ErrorOr<Updated>>;
 
-public class ChangeUserRoleCommandHandler(UserManager<ApplicationUser> userManager, ApplicationDbContext db)
+public class ChangeUserRoleCommandHandler(UserManager<ApplicationUser> userManager, ITransactionRunner transaction)
     : IRequestHandler<ChangeUserRoleCommand, ErrorOr<Updated>>
 {
     public async Task<ErrorOr<Updated>> Handle(ChangeUserRoleCommand command, CancellationToken cancellationToken)
@@ -31,20 +31,20 @@ public class ChangeUserRoleCommandHandler(UserManager<ApplicationUser> userManag
         if (allowed.IsError) return allowed.Errors;
 
         // Remove + add in one transaction: a failed add used to leave the user with no role.
-        await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        if (currentRoles.Any())
+        return await transaction.ExecuteAsync<Updated>(async _ =>
         {
-            var removed = await userManager.RemoveFromRolesAsync(user, currentRoles);
-            if (!removed.Succeeded)
-                return removed.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
-        }
+            if (currentRoles.Any())
+            {
+                var removed = await userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removed.Succeeded)
+                    return removed.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
+            }
 
-        var result = await userManager.AddToRoleAsync(user, command.NewRole);
-        if (!result.Succeeded)
-            return result.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
+            var result = await userManager.AddToRoleAsync(user, command.NewRole);
+            if (!result.Succeeded)
+                return result.Errors.Select(e => Error.Validation(e.Code, e.Description)).ToList();
 
-        await tx.CommitAsync(cancellationToken);
-        return Result.Updated;
+            return Result.Updated;
+        }, cancellationToken);
     }
 }

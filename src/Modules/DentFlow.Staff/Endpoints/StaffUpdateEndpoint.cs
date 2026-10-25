@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -11,7 +12,7 @@ public class StaffUpdateEndpoint(ISender sender) : Endpoint<UpdateStaffMemberReq
     public override void Configure()
     {
         Put("/staff/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Policies(Permission.PeopleManage);
         Version(1);
         Summary(s => s.Summary = "Update a staff member");
     }

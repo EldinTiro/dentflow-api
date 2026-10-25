@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -11,7 +12,7 @@ public class StaffListBlockedTimesEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Get("/staff/{id}/blocked-times");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles([.. DomainRoles.All]);
         Version(1);
         Summary(s => s.Summary = "List blocked times for a staff member");
     }

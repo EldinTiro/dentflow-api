@@ -14,11 +14,12 @@ public class BookAppointmentCommandHandlerTests
     private readonly IAppointmentRepository _repo = Substitute.For<IAppointmentRepository>();
     private readonly IAppointmentTypeRepository _typeRepo = Substitute.For<IAppointmentTypeRepository>();
     private readonly IProviderBlockedTimeChecker _blockedTimeChecker = Substitute.For<IProviderBlockedTimeChecker>();
+    private readonly IPatientDirectory _patients = Substitute.For<IPatientDirectory>();
     private readonly BookAppointmentCommandHandler _sut;
 
     public BookAppointmentCommandHandlerTests()
     {
-        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo, _blockedTimeChecker);
+        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo, _blockedTimeChecker, _patients);
     }
 
     private static BookAppointmentCommand ValidCommand(DateTime? startAt = null, DateTime? endAt = null)
@@ -36,6 +37,21 @@ public class BookAppointmentCommandHandlerTests
             OperatoryId: null,
             IsNewPatient: false,
             Source: "Staff");
+    }
+
+    // People-merge plan B3 / D11: an inactive patient is reactivated before booking.
+    [Fact]
+    public async Task Handle_InactivePatient_ReturnsConflict_AndBooksNothing()
+    {
+        var command = ValidCommand();
+        _patients.IsInactiveAsync(command.PatientId, Arg.Any<CancellationToken>()).Returns(true);
+        _typeRepo.GetByIdAsync(command.AppointmentTypeId, Arg.Any<CancellationToken>())
+                 .Returns(AppointmentType.Create("Checkup", 60));
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Patient.Inactive");
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

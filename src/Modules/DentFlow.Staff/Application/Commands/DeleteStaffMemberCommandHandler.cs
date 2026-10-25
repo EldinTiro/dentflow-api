@@ -1,11 +1,16 @@
 ﻿using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Staff.Application.Interfaces;
 using DentFlow.Staff.Domain;
 
 namespace DentFlow.Staff.Application.Commands;
 
-public class DeleteStaffMemberCommandHandler(IStaffRepository staffRepository)
+public class DeleteStaffMemberCommandHandler(
+    IStaffRepository staffRepository,
+    IUserAccountLifecycle accounts,
+    IAppointmentReader appointments,
+    ITransactionRunner transaction)
     : IRequestHandler<DeleteStaffMemberCommand, ErrorOr<Deleted>>
 {
     public async Task<ErrorOr<Deleted>> Handle(
@@ -16,9 +21,21 @@ public class DeleteStaffMemberCommandHandler(IStaffRepository staffRepository)
         if (staffMember is null)
             return StaffErrors.NotFound;
 
-        await staffRepository.SoftDeleteAsync(staffMember, cancellationToken);
+        // Delete is for a profile created by mistake; anyone with appointments is deactivated (D12).
+        if (await appointments.ProviderHasAnyAsync(staffMember.Id, cancellationToken))
+            return StaffErrors.HasHistory;
 
-        return Result.Deleted;
+        // The account follows the profile (people-merge plan D4), or neither changes.
+        return await transaction.ExecuteAsync<Deleted>(async ct =>
+        {
+            if (staffMember.UserId is { } userId)
+            {
+                var deactivated = await accounts.DeactivateAsync(userId, command.Actor, ct);
+                if (deactivated.IsError) return deactivated.Errors;
+            }
+
+            await staffRepository.SoftDeleteAsync(staffMember, ct);
+            return Result.Deleted;
+        }, cancellationToken);
     }
 }
-

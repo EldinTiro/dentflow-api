@@ -3,6 +3,7 @@ using MediatR;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -11,7 +12,7 @@ public class StaffGetAvailabilityEndpoint(ISender sender) : EndpointWithoutReque
     public override void Configure()
     {
         Get("/staff/{id}/availability");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles([.. DomainRoles.All]);
         Version(1);
         Summary(s => s.Summary = "Get all availability slots for a staff member");
     }

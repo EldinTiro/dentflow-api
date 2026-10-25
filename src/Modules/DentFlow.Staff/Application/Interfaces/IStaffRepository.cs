@@ -25,6 +25,7 @@ public interface IStaffRepository
 
     // Blocked Times
     Task<IReadOnlyList<StaffBlockedTime>> GetBlockedTimesAsync(Guid staffMemberId, DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StaffBlockedTime>> GetClinicBlockedTimesAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default);
     Task<StaffBlockedTime?> GetBlockedTimeByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task AddBlockedTimeAsync(StaffBlockedTime blockedTime, CancellationToken cancellationToken = default);
     Task SoftDeleteBlockedTimeAsync(StaffBlockedTime blockedTime, CancellationToken cancellationToken = default);

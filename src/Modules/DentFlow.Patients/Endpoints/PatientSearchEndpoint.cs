@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -11,7 +12,7 @@ public class PatientSearchEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/search");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Quick patient autocomplete search by name, phone or email. Returns up to 20 results.");
     }

@@ -12,7 +12,7 @@ public class TreatmentPlanGetByIdEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/treatment-plans/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Get a treatment plan by ID (includes all items)");
     }

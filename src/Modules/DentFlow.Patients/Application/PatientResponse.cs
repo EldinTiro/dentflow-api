@@ -31,7 +31,9 @@ public record PatientResponse(
     bool EmailOptIn,
     string? Notes,
     DateTime CreatedAt,
-    DateTime? UpdatedAt)
+    DateTime? UpdatedAt,
+    DateTime? DeactivatedAt,
+    string? DeactivationReason)
 {
     public static PatientResponse FromEntity(Patient p) => new(
         p.Id,
@@ -64,5 +66,7 @@ public record PatientResponse(
         p.EmailOptIn,
         p.Notes,
         p.CreatedAt,
-        p.UpdatedAt);
+        p.UpdatedAt,
+        p.DeactivatedAt,
+        p.DeactivationReason);
 }

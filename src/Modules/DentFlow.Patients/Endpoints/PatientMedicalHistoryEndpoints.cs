@@ -4,6 +4,8 @@ using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -13,7 +15,7 @@ public class GetMedicalHistoryEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/medical-history");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
     }
 
@@ -52,7 +54,7 @@ public class UpsertMedicalHistoryEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/patients/{patientId}/medical-history");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
     }
 

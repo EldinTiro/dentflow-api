@@ -16,7 +16,7 @@ public class TreatmentPlanCreateEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/treatment-plans");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Create a new treatment plan for a patient");
     }

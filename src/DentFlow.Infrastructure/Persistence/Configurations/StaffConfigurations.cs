@@ -30,6 +30,10 @@ public class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMember>
         builder.HasIndex(s => new { s.TenantId, s.Email }).IsUnique()
             .HasFilter("\"Email\" IS NOT NULL AND \"IsDeleted\" = false");
 
+        // One sign-in account belongs to at most one profile per clinic (people-merge plan 1.3).
+        builder.HasIndex(s => new { s.TenantId, s.UserId }).IsUnique()
+            .HasFilter("\"UserId\" IS NOT NULL AND \"IsDeleted\" = false");
+
         builder.HasMany(s => s.Availabilities)
             .WithOne(a => a.StaffMember)
             .HasForeignKey(a => a.StaffMemberId)

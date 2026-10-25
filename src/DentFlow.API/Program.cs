@@ -37,6 +37,8 @@ builder.Services.AddApplication(
 );
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddNotificationsModule();
+// Account lifecycle for other modules; lives in Identity next to the user-management guards.
+builder.Services.AddScoped<DentFlow.Application.Common.Interfaces.IUserAccountLifecycle, DentFlow.Identity.Application.UserAccountLifecycle>();
 
 // Hangfire — skip in Testing environment (Testcontainers don't expose a pg port to Hangfire)
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -84,7 +86,12 @@ builder.Services
         ];
     })
     .AddAuthenticationJwtBearer(o => o.SigningKey = jwtSigningKey)
-    .AddAuthorization();
+    .AddAuthorization(o =>
+    {
+        // One policy per permission, satisfied by the roles RolePermissions grants it to.
+        foreach (var permission in DentFlow.Domain.Identity.Permission.All)
+            o.AddPolicy(permission, p => p.RequireRole(DentFlow.Domain.Identity.RolePermissions.RolesWith(permission)));
+    });
 
 builder.Services.SwaggerDocument(o =>
 {
@@ -143,6 +150,8 @@ using (var scope = app.Services.CreateScope())
 
 // Seed SuperAdmin user + default appointment types on startup
 await SuperAdminSeeder.SeedAsync(app.Services);
+// Every clinic account gets its staff profile (people-merge plan 3.1); after the role sync.
+await DentFlow.Infrastructure.StaffAccountBackfill.RunAsync(app.Services);
 await AppointmentTypeSeeder.SeedAsync(app.Services);
 
 // Demo data for local work only, and off unless explicitly asked for.

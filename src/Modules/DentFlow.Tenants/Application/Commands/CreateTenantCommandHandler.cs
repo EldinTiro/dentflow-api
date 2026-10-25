@@ -4,6 +4,7 @@ using DentFlow.Application.Common.Interfaces;
 using DentFlow.Domain.Identity;
 using DentFlow.Domain.Tenants;
 using DentFlow.Tenants.Application.Interfaces;
+using DentFlow.Application.Common;
 
 namespace DentFlow.Tenants.Application.Commands;
 
@@ -27,7 +28,7 @@ public class CreateTenantCommandHandler(
         await tenantRepository.AddAsync(tenant, cancellationToken);
 
         // Generate a one-time temp password — returned in response body only
-        var tempPassword = $"Tmp_{Guid.NewGuid():N}!A1";
+        var tempPassword = TemporaryPassword.Generate();
 
         var userResult = await userProvisioningService.CreateUserAsync(
             command.OwnerEmail,

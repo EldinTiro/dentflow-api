@@ -25,12 +25,19 @@ public static class ErrorOrEndpointExtensions
 
     /// <summary>
     /// Sends every error as <c>{ name: code, reason: description }</c>, with the status
-    /// taken from the first error's type.
+    /// taken from the first error's type. Error metadata goes along as
+    /// <c>{ name: "code.key", reason: value }</c>, so a client can read e.g. how many
+    /// upcoming appointments blocked a deactivation without parsing the message.
     /// </summary>
     public static Task SendResultErrorsAsync(this IEndpoint endpoint, IReadOnlyList<Error> errors, CancellationToken ct)
     {
         foreach (var error in errors)
+        {
             endpoint.ValidationFailures.Add(new ValidationFailure(error.Code, error.Description));
+            foreach (var (key, value) in error.Metadata ?? [])
+                endpoint.ValidationFailures.Add(new ValidationFailure(
+                    $"{error.Code}.{key}", Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)));
+        }
 
         var status = errors.Count > 0 ? errors[0].Type.ToStatusCode() : StatusCodes.Status400BadRequest;
         return endpoint.HttpContext.Response.SendErrorsAsync(endpoint.ValidationFailures, status, cancellation: ct);

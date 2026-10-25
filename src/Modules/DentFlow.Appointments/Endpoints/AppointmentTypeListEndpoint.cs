@@ -12,7 +12,7 @@ public class AppointmentTypeListEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/appointment-types");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "List all appointment types for the current tenant");
     }

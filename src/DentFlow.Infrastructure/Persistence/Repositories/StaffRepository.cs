@@ -102,6 +102,13 @@ public class StaffRepository(ApplicationDbContext dbContext) : IStaffRepository
         return await query.OrderBy(b => b.StartAt).ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<StaffBlockedTime>> GetClinicBlockedTimesAsync(
+        DateTime from, DateTime to, CancellationToken cancellationToken = default) =>
+        await dbContext.Set<StaffBlockedTime>()
+            .Where(b => b.StartAt < to && b.EndAt > from)
+            .OrderBy(b => b.StartAt)
+            .ToListAsync(cancellationToken);
+
     public async Task<StaffBlockedTime?> GetBlockedTimeByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await dbContext.Set<StaffBlockedTime>().FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
 

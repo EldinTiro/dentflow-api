@@ -2,6 +2,7 @@ using FastEndpoints;
 using MediatR;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -10,7 +11,7 @@ public class PatientDocumentDeleteEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Delete("/patients/{patientId}/documents/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
         Summary(s => s.Summary = "Delete a patient document");
     }

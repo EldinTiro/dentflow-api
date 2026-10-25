@@ -18,7 +18,7 @@ public class TreatmentPlanUpdateEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/treatment-plans/{id}");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Update a treatment plan");
     }

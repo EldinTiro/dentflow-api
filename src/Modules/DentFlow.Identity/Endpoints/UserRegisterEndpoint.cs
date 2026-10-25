@@ -1,6 +1,5 @@
 ﻿using FastEndpoints;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using DentFlow.Identity.Application.Commands;
 using AppRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Application.Common.Http;
@@ -8,23 +7,22 @@ using DentFlow.Application.Common.Http;
 namespace DentFlow.Identity.Endpoints;
 
 /// <summary>
-/// Registers a new user account.
-/// Open only to SuperAdmin globally, or ClinicOwner within their tenant.
+/// Registers a user account directly. Platform admins only: clinic staff are created
+/// through the Team invite flow. This was [AllowAnonymous] and accepted any role, so
+/// anyone who could reach the API could create a SuperAdmin.
 /// </summary>
-[AllowAnonymous] // temporarily open; restrict to SuperAdmin / ClinicOwner in production gate
 public class UserRegisterEndpoint(ISender sender)
     : Endpoint<RegisterUserRequest, RegisterUserResponse>
 {
     public override void Configure()
     {
         Post("/auth/register");
-        AllowAnonymous();
+        Roles(AppRoles.SuperAdmin);
         Version(1);
         Summary(s =>
         {
             s.Summary = "Register a new user";
-            s.Description = "Creates a new user account and assigns the specified role. " +
-                            "In production this endpoint must be restricted to SuperAdmin or ClinicOwner.";
+            s.Description = "Creates a new user account and assigns the specified role. SuperAdmin only.";
         });
     }
 

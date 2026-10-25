@@ -1,4 +1,5 @@
 ﻿﻿using DentFlow.Domain.Common;
+using ErrorOr;
 
 namespace DentFlow.Staff.Domain;
 
@@ -39,8 +40,7 @@ public class StaffMember : TenantAuditableEntity
         string? phone,
         DateOnly? hireDate,
         string? specialty = null,
-        string? colorHex = null,
-        Guid? userId = null)
+        string? colorHex = null)
     {
         return new StaffMember
         {
@@ -52,7 +52,6 @@ public class StaffMember : TenantAuditableEntity
             HireDate = hireDate,
             Specialty = specialty,
             ColorHex = colorHex ?? "#3B82F6",
-            UserId = userId
         };
     }
 
@@ -87,20 +86,81 @@ public class StaffMember : TenantAuditableEntity
         SetUpdated();
     }
 
-    public void Deactivate()
+    public void Rename(string firstName, string lastName)
     {
+        FirstName = firstName;
+        LastName = lastName;
+        SetUpdated();
+    }
+
+    public ErrorOr<Success> Deactivate()
+    {
+        if (!IsActive) return StaffErrors.AlreadyInactive;
+
         IsActive = false;
         TerminationDate = DateOnly.FromDateTime(DateTime.UtcNow);
         SetUpdated();
+        return Result.Success;
     }
 
-    public void Activate()
+    public ErrorOr<Success> Activate()
     {
+        if (IsActive) return StaffErrors.AlreadyActive;
+
         IsActive = true;
         TerminationDate = null;
         SetUpdated();
+        return Result.Success;
     }
 
     public string FullName => $"{FirstName} {LastName}";
+
+    /// <summary>
+    /// Can appear in provider lists and be booked (people-merge plan D3). Decided here,
+    /// not in the web app: clinical people only, and never while inactive.
+    /// </summary>
+    public bool IsBookable =>
+        IsActive && StaffType is StaffType.Dentist or StaffType.Hygienist or StaffType.DentalAssistant;
+
+    /// <summary>
+    /// Ties a sign-in account to this profile. The profile's email is the login email (D1),
+    /// so it must exist; one profile holds at most one account.
+    /// </summary>
+    public ErrorOr<Success> LinkUser(Guid userId)
+    {
+        var allowed = CanLinkUser();
+        if (allowed.IsError) return allowed.Errors;
+
+        UserId = userId;
+        SetUpdated();
+        return Result.Success;
+    }
+
+    /// <summary>Same rules as <see cref="LinkUser"/>, checked before an account is created for it.</summary>
+    public ErrorOr<Success> CanLinkUser()
+    {
+        if (UserId is not null) return StaffErrors.AlreadyHasAccess;
+        if (!IsActive) return StaffErrors.Inactive;
+        if (string.IsNullOrWhiteSpace(Email)) return StaffErrors.EmailRequiredForAccess;
+        return Result.Success;
+    }
+
+    /// <summary>
+    /// Backfill only (people-merge plan 3.1): attaches an account that already exists to its
+    /// profile even when one of them is inactive — history is linked, not refused.
+    /// </summary>
+    public ErrorOr<Success> AttachExistingAccount(Guid userId)
+    {
+        if (UserId is not null) return StaffErrors.AlreadyHasAccess;
+        UserId = userId;
+        SetUpdated();
+        return Result.Success;
+    }
+
+    public void Unlink()
+    {
+        UserId = null;
+        SetUpdated();
+    }
 }
 

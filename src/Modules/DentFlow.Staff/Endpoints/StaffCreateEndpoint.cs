@@ -4,6 +4,7 @@ using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Staff.Domain;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -12,7 +13,7 @@ public class StaffCreateEndpoint(ISender sender) : Endpoint<CreateStaffMemberReq
     public override void Configure()
     {
         Post("/staff");
-        Roles("ClinicOwner", "ClinicAdmin", "SuperAdmin");
+        Policies(Permission.PeopleManage);
         Version(1);
         Summary(s =>
         {
@@ -25,7 +26,7 @@ public class StaffCreateEndpoint(ISender sender) : Endpoint<CreateStaffMemberReq
     {
         var command = new CreateStaffMemberCommand(
             req.StaffType, req.FirstName, req.LastName, req.Email,
-            req.Phone, req.HireDate, req.Specialty, req.ColorHex);
+            req.Phone, req.HireDate, req.Specialty, req.ColorHex, req.Access);
 
         var result = await sender.Send(command, ct);
 
@@ -46,4 +47,5 @@ public record CreateStaffMemberRequest(
     string? Phone,
     DateOnly? HireDate,
     string? Specialty,
-    string? ColorHex);
+    string? ColorHex,
+    StaffAccessRequest? Access = null);

@@ -65,7 +65,13 @@ public static class DependencyInjection
         services.AddScoped<IProviderAvailabilityReader, ProviderAvailabilityReader>();
         services.AddScoped<ITreatmentPlanReader, TreatmentPlanReader>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IFinanceReportService, FinanceReportService>();
         services.AddScoped<IPatientDirectory, PatientDirectory>();
+        services.AddScoped<ITransactionRunner, TransactionRunner>();
+        services.AddScoped<IUserAccountDirectory, UserAccountDirectory>();
+        services.AddScoped<IStaffDirectory, StaffDirectory>();
+        services.AddScoped<IAppointmentReader, AppointmentReader>();
+        services.AddScoped<IPatientHistoryReader, PatientHistoryReader>();
         services.AddHttpContextAccessor();
         services.AddScoped<IFeatureService, TierFeatureService>();
 

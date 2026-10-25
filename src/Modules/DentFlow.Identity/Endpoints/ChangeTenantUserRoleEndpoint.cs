@@ -14,7 +14,7 @@ public class ChangeTenantUserRoleEndpoint(ISender sender, UserManager<Applicatio
     public override void Configure()
     {
         Put("/users/{id}/role");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin);
+        Policies(Permission.PeopleManage);
         Version(1);
         Summary(s => s.Summary = "Change a user's role within the caller's clinic");
     }

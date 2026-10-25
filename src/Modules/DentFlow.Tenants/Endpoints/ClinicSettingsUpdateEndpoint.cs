@@ -16,14 +16,14 @@ public class UpdateClinicSettingsRequest
 }
 
 /// <summary>
-/// Updates clinic working hours. Restricted to ClinicOwner and ClinicAdmin.
+/// Updates clinic working hours. Restricted to the clinic owner.
 /// </summary>
 public class ClinicSettingsUpdateEndpoint(ISender sender) : Endpoint<UpdateClinicSettingsRequest, ClinicSettingsResponse>
 {
     public override void Configure()
     {
         Put("/tenant/settings");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin);
+        Roles(DomainRoles.ClinicOwner);
         Version(1);
         Summary(s => s.Summary = "Update clinic working-hours settings");
     }

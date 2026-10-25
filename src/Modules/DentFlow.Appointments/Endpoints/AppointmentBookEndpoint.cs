@@ -11,7 +11,7 @@ public class AppointmentBookEndpoint(ISender sender) : Endpoint<BookAppointmentR
     public override void Configure()
     {
         Post("/appointments");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
         Version(1);
         Summary(s => s.Summary = "Book a new appointment");
     }

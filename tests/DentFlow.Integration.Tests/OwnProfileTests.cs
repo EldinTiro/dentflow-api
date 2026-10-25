@@ -51,9 +51,9 @@ public class OwnProfileTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData(Roles.Hygienist)]
-    [InlineData(Roles.BillingStaff)]
-    [InlineData(Roles.ReadOnly)]
+    [InlineData(Roles.Dentist)]
+    [InlineData(Roles.DentalNurse)]
+    [InlineData(Roles.Receptionist)]
     public async Task EveryRole_CanReadItsOwnProfileAndPreferences(string role)
     {
         var client = await SignedInAsync(role);

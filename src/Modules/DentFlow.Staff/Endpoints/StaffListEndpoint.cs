@@ -4,6 +4,7 @@ using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Queries;
 using DentFlow.Staff.Domain;
 using DentFlow.Application.Common.Http;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Staff.Endpoints;
 
@@ -12,16 +13,20 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
     public override void Configure()
     {
         Get("/staff");
-        Roles("ClinicOwner", "ClinicAdmin", "Dentist", "Hygienist", "Receptionist", "SuperAdmin");
+        Roles([.. DomainRoles.All]);
         Version(1);
-        Summary(s => s.Summary = "List staff members with optional filters");
+        Summary(s => s.Summary = "List staff members with optional filters (default active; isActive=all for everyone)");
     }
 
     public override async Task HandleAsync(CancellationToken ct)
     {
         var searchTerm = Query<string?>("searchTerm", isRequired: false);
         var staffTypeStr = Query<string?>("staffType", isRequired: false);
-        var isActive = Query<bool?>("isActive", isRequired: false);
+        // People-merge plan D11: active staff unless asked otherwise; "all" lifts the filter.
+        var isActiveStr = Query<string?>("isActive", isRequired: false);
+        bool? isActive = string.Equals(isActiveStr, "all", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : bool.TryParse(isActiveStr, out var active) ? active : true;
         var pageStr = Query<string?>("page", isRequired: false);
         var pageSizeStr = Query<string?>("pageSize", isRequired: false);
         var page = int.TryParse(pageStr, out var p) ? p : 1;

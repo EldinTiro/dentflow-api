@@ -4,6 +4,9 @@ namespace DentFlow.Appointments.Domain;
 
 public static class AppointmentErrors
 {
+    public static readonly Error PatientInactive =
+        Error.Conflict("Patient.Inactive", "This patient is inactive. Reactivate them before booking.");
+
     public static readonly Error NotFound =
         Error.NotFound("Appointment.NotFound", "Appointment was not found.");
 

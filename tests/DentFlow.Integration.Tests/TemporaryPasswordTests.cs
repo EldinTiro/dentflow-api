@@ -79,7 +79,7 @@ public class TemporaryPasswordTests(DentFlowAppFactory factory)
     [Fact]
     public async Task AfterChangingThePassword_TheUserGetsFullAccess()
     {
-        var (client, invite, _) = await InvitedUserSignedInAsync(Roles.Hygienist);
+        var (client, invite, _) = await InvitedUserSignedInAsync(Roles.DentalNurse);
 
         var change = await client.PostAsJsonAsync("/api/v1/users/me/change-password",
             new { currentPassword = invite.TempPassword, newPassword = NewPassword });

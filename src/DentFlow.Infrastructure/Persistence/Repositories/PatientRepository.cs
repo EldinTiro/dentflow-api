@@ -147,7 +147,8 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
 
     public async Task DeleteEmergencyContactAsync(PatientEmergencyContact contact, CancellationToken ct = default)
     {
-        dbContext.PatientEmergencyContacts.Remove(contact);
+        // Soft delete: clinical data stays recoverable (people-merge plan D13).
+        contact.SoftDelete();
         await dbContext.SaveChangesAsync(ct);
     }
 
@@ -170,7 +171,8 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
 
     public async Task DeleteAllergyAsync(Allergy allergy, CancellationToken ct = default)
     {
-        dbContext.Allergies.Remove(allergy);
+        // Soft delete: clinical data stays recoverable (people-merge plan D13).
+        allergy.SoftDelete();
         await dbContext.SaveChangesAsync(ct);
     }
 

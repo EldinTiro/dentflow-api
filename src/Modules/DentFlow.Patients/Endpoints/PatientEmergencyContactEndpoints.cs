@@ -4,6 +4,8 @@ using DentFlow.Patients.Application;
 using DentFlow.Patients.Application.Commands;
 using DentFlow.Patients.Application.Queries;
 using DentFlow.Application.Common.Http;
+using DentFlow.Domain.Identity;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 
 namespace DentFlow.Patients.Endpoints;
 
@@ -13,7 +15,7 @@ public class ListEmergencyContactsEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/emergency-contacts");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "Dentist", "Hygienist", "SuperAdmin");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
     }
 
@@ -40,7 +42,7 @@ public class AddEmergencyContactEndpoint(ISender sender)
     public override void Configure()
     {
         Post("/patients/{patientId}/emergency-contacts");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
     }
 
@@ -59,7 +61,7 @@ public class DeleteEmergencyContactEndpoint(ISender sender) : EndpointWithoutReq
     public override void Configure()
     {
         Delete("/patients/{patientId}/emergency-contacts/{contactId}");
-        Roles("ClinicOwner", "ClinicAdmin", "Receptionist", "SuperAdmin");
+        Policies(Permission.PatientsManage);
         Version(1);
     }
 

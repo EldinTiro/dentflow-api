@@ -1,11 +1,12 @@
 ﻿using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Staff.Application.Interfaces;
 using DentFlow.Staff.Domain;
 
 namespace DentFlow.Staff.Application.Queries;
 
-public class GetStaffMemberByIdQueryHandler(IStaffRepository staffRepository)
+public class GetStaffMemberByIdQueryHandler(IStaffRepository staffRepository, IUserAccountDirectory accounts)
     : IRequestHandler<GetStaffMemberByIdQuery, ErrorOr<StaffMemberResponse>>
 {
     public async Task<ErrorOr<StaffMemberResponse>> Handle(
@@ -16,7 +17,10 @@ public class GetStaffMemberByIdQueryHandler(IStaffRepository staffRepository)
         if (staffMember is null)
             return StaffErrors.NotFound;
 
-        return StaffMemberResponse.FromEntity(staffMember);
+        if (staffMember.UserId is not { } userId)
+            return StaffMemberResponse.FromEntity(staffMember, null);
+
+        var summaries = await accounts.GetSummariesAsync([userId], cancellationToken);
+        return StaffMemberResponse.FromEntity(staffMember, summaries.GetValueOrDefault(userId));
     }
 }
-

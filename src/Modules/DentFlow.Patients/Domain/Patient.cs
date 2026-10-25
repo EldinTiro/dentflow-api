@@ -1,4 +1,5 @@
-﻿﻿using DentFlow.Domain.Common;
+﻿﻿using ErrorOr;
+using DentFlow.Domain.Common;
 
 namespace DentFlow.Patients.Domain;
 
@@ -31,6 +32,8 @@ public class Patient : TenantAuditableEntity
     public string? ReferredBySource { get; private set; }
     public Guid? PreferredProviderId { get; private set; }
     public PatientStatus Status { get; private set; } = PatientStatus.Active;
+    public DateTime? DeactivatedAt { get; private set; }
+    public string? DeactivationReason { get; private set; }
     public DateOnly? FirstVisitDate { get; private set; }
     public DateOnly? LastVisitDate { get; private set; }
     public DateOnly? RecallDueDate { get; private set; }
@@ -122,6 +125,33 @@ public class Patient : TenantAuditableEntity
     {
         Status = status;
         SetUpdated();
+    }
+
+    /// <summary>
+    /// People-merge plan D8: a patient who stops coming is deactivated, never deleted —
+    /// appointments, plans and invoices stay. Reversible with <see cref="Reactivate"/>.
+    /// </summary>
+    public ErrorOr<Success> Deactivate(string? reason, DateTime now)
+    {
+        if (Status == PatientStatus.Inactive) return PatientErrors.AlreadyInactive;
+
+        Status = PatientStatus.Inactive;
+        DeactivatedAt = now;
+        DeactivationReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        SetUpdated();
+        return Result.Success;
+    }
+
+    /// <summary>Back to Active from Inactive or Transferred.</summary>
+    public ErrorOr<Success> Reactivate()
+    {
+        if (Status == PatientStatus.Active) return PatientErrors.AlreadyActive;
+
+        Status = PatientStatus.Active;
+        DeactivatedAt = null;
+        DeactivationReason = null;
+        SetUpdated();
+        return Result.Success;
     }
 
     public void UpdateLastVisit(DateOnly visitDate)

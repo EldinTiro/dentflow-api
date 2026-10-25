@@ -17,11 +17,7 @@ public class ClinicSettingsGetEndpoint(ISender sender) : EndpointWithoutRequest<
     public override void Configure()
     {
         Get("/tenant/settings");
-        Roles(
-            DomainRoles.ClinicOwner, DomainRoles.ClinicAdmin,
-            DomainRoles.Dentist, DomainRoles.Hygienist,
-            DomainRoles.Receptionist, DomainRoles.BillingStaff,
-            DomainRoles.ReadOnly);
+        Roles(DomainRoles.ClinicOwner, DomainRoles.Dentist, DomainRoles.DentalNurse, DomainRoles.Receptionist);
         Version(1);
         Summary(s => s.Summary = "Get clinic working-hours settings");
     }

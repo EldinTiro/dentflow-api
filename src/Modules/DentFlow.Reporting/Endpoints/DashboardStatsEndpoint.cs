@@ -1,4 +1,5 @@
 using DentFlow.Application.Common.Interfaces;
+using DentFlow.Domain.Identity;
 using FastEndpoints;
 using Microsoft.AspNetCore.Http;
 
@@ -10,12 +11,12 @@ public class DashboardStatsEndpoint(IDashboardService dashboardService)
     public override void Configure()
     {
         Get("/dashboard/stats");
-        Roles("SuperAdmin", "ClinicOwner", "ClinicAdmin", "Admin", "Dentist", "Hygienist", "Receptionist", "BillingStaff", "OfficeManager");
+        Policies(Permission.DashboardView);
         Version(1);
         Summary(s =>
         {
             s.Summary     = "Get dashboard KPI summary stats for the current tenant";
-            s.Description = "Returns revenue, outstanding balance, new patients, appointment completion trends, and recall metrics.";
+            s.Description = "Returns new patients, appointment completion trends and recall metrics. Money is on /dashboard/finance.";
         });
     }
 
