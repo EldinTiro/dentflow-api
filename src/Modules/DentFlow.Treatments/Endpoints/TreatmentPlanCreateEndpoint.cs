@@ -17,7 +17,7 @@ public class TreatmentPlanCreateEndpoint(ISender sender)
     {
         Post("/patients/{patientId}/treatment-plans");
         // Clinical roles, the same as adding items to the plan (DT-12).
-        Roles("ClinicOwner", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Create a new treatment plan for a patient");
     }

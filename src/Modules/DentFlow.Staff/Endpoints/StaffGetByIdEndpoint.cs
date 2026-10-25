@@ -12,7 +12,8 @@ public class StaffGetByIdEndpoint(ISender sender) : EndpointWithoutRequest<Staff
     public override void Configure()
     {
         Get("/staff/{id}");
-        Roles([.. DomainRoles.All]);
+        // Clinic roles only; the platform admin has no clinic data (DT-18).
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Get a staff member by ID");
     }

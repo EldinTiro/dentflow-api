@@ -12,7 +12,8 @@ public class StaffListBlockedTimesEndpoint(ISender sender) : EndpointWithoutRequ
     public override void Configure()
     {
         Get("/staff/{id}/blocked-times");
-        Roles([.. DomainRoles.All]);
+        // Clinic roles only; the platform admin has no clinic data (DT-18).
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "List blocked times for a staff member");
     }

@@ -12,7 +12,7 @@ public class AppointmentSlotsEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/staff/{providerId}/slots");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Get available appointment slots for a provider on a given date.");
     }

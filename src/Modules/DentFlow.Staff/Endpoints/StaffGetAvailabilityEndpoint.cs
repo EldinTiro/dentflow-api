@@ -12,7 +12,8 @@ public class StaffGetAvailabilityEndpoint(ISender sender) : EndpointWithoutReque
     public override void Configure()
     {
         Get("/staff/{id}/availability");
-        Roles([.. DomainRoles.All]);
+        // Clinic roles only; the platform admin has no clinic data (DT-18).
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Get all availability slots for a staff member");
     }

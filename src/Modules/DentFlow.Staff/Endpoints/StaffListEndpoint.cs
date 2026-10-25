@@ -13,7 +13,8 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
     public override void Configure()
     {
         Get("/staff");
-        Roles([.. DomainRoles.All]);
+        // Clinic roles only; the platform admin has no clinic data (DT-18).
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "List staff members with optional filters (default active; isActive=all for everyone)");
     }
