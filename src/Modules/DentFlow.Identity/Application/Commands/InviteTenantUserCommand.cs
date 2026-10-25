@@ -16,7 +16,10 @@ public record InviteTenantUserCommand(
 
 public record InviteTenantUserResult(Guid UserId, string Email, string TempPassword);
 
-public class InviteTenantUserCommandHandler(IUserProvisioningService userProvisioningService)
+public class InviteTenantUserCommandHandler(
+    IUserProvisioningService userProvisioningService,
+    IStaffDirectory staff,
+    ITransactionRunner transaction)
     : IRequestHandler<InviteTenantUserCommand, ErrorOr<InviteTenantUserResult>>
 {
     public async Task<ErrorOr<InviteTenantUserResult>> Handle(
@@ -24,14 +27,20 @@ public class InviteTenantUserCommandHandler(IUserProvisioningService userProvisi
     {
         var tempPassword = TemporaryPassword.Generate();
 
-        var result = await userProvisioningService.CreateUserAsync(
-            command.Email, tempPassword,
-            command.FirstName, command.LastName,
-            command.Role, command.CallerTenantId, ct);
+        return await transaction.ExecuteAsync<InviteTenantUserResult>(async innerCt =>
+        {
+            var result = await userProvisioningService.CreateUserAsync(
+                command.Email, tempPassword,
+                command.FirstName, command.LastName,
+                command.Role, command.CallerTenantId, innerCt);
+            if (result.IsError) return result.Errors;
 
-        if (result.IsError) return result.Errors;
+            // Staff is the only list of people now (DT-07).
+            await staff.CreateLinkedProfileAsync(result.Value, command.CallerTenantId,
+                command.FirstName, command.LastName, command.Email, command.Role, innerCt);
 
-        return new InviteTenantUserResult(result.Value, command.Email, tempPassword);
+            return new InviteTenantUserResult(result.Value, command.Email, tempPassword);
+        }, ct);
     }
 }
 

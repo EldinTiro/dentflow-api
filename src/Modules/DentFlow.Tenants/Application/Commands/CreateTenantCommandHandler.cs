@@ -10,7 +10,9 @@ namespace DentFlow.Tenants.Application.Commands;
 
 public class CreateTenantCommandHandler(
     ITenantRepository tenantRepository,
-    IUserProvisioningService userProvisioningService)
+    IUserProvisioningService userProvisioningService,
+    IStaffDirectory staff,
+    ITransactionRunner transaction)
     : IRequestHandler<CreateTenantCommand, ErrorOr<TenantCreatedResponse>>
 {
     public async Task<ErrorOr<TenantCreatedResponse>> Handle(
@@ -25,23 +27,29 @@ public class CreateTenantCommandHandler(
         tenant.SetPlan(command.Plan, null);
         tenant.SetLogo(command.LogoBase64);
 
-        await tenantRepository.AddAsync(tenant, cancellationToken);
-
         // Generate a one-time temp password — returned in response body only
         var tempPassword = TemporaryPassword.Generate();
 
-        var userResult = await userProvisioningService.CreateUserAsync(
-            command.OwnerEmail,
-            tempPassword,
-            command.OwnerFirstName,
-            command.OwnerLastName,
-            Roles.ClinicOwner,
-            tenant.Id,
-            cancellationToken);
+        // Clinic, owner account and the owner's staff profile (DT-07) together, or none.
+        return await transaction.ExecuteAsync<TenantCreatedResponse>(async ct =>
+        {
+            await tenantRepository.AddAsync(tenant, ct);
 
-        if (userResult.IsError)
-            return userResult.Errors;
+            var userResult = await userProvisioningService.CreateUserAsync(
+                command.OwnerEmail,
+                tempPassword,
+                command.OwnerFirstName,
+                command.OwnerLastName,
+                Roles.ClinicOwner,
+                tenant.Id,
+                ct);
+            if (userResult.IsError)
+                return userResult.Errors;
 
-        return TenantCreatedResponse.FromEntity(tenant, command.OwnerEmail, tempPassword);
+            await staff.CreateLinkedProfileAsync(userResult.Value, tenant.Id,
+                command.OwnerFirstName, command.OwnerLastName, command.OwnerEmail, Roles.ClinicOwner, ct);
+
+            return TenantCreatedResponse.FromEntity(tenant, command.OwnerEmail, tempPassword);
+        }, cancellationToken);
     }
 }

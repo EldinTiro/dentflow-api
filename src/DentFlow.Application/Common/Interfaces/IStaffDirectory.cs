@@ -14,4 +14,11 @@ public interface IStaffDirectory
 
     /// <summary>The staff member in the caller's clinic, or null when there is none (DT-02).</summary>
     Task<StaffBookability?> GetBookabilityAsync(Guid staffId, CancellationToken ct);
+
+    /// <summary>
+    /// DT-07: gives a new account its staff profile in <paramref name="tenantId"/> — links an
+    /// unlinked profile with the same email, or creates one. Accounts made outside the Staff
+    /// screen (SuperAdmin provisioning, invite, tenant creation) need this to be visible.
+    /// </summary>
+    Task CreateLinkedProfileAsync(Guid userId, Guid tenantId, string firstName, string lastName, string email, string role, CancellationToken ct);
 }

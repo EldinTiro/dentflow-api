@@ -64,7 +64,7 @@ public static class StaffAccountBackfill
                 continue;
             }
 
-            var profile = StaffMember.Create(TypeFor(account.Role), account.FirstName, account.LastName, account.Email, null, null);
+            var profile = StaffMember.Create(StaffMember.TypeForAccountRole(account.Role), account.FirstName, account.LastName, account.Email, null, null);
             profile.SetTenant(account.TenantId);
             profile.AttachExistingAccount(account.Id);
             if (!account.IsActive) profile.Deactivate();
@@ -76,13 +76,4 @@ public static class StaffAccountBackfill
         logger.LogInformation("Staff backfill: {Linked} linked, {Created} created, {Skipped} skipped", linked, created, skipped);
         return new StaffBackfillSummary(linked, created, skipped);
     }
-
-    /// <summary>Owners who don't treat patients get a non-bookable profile (D3).</summary>
-    private static StaffType TypeFor(string? role) => role switch
-    {
-        Roles.Dentist => StaffType.Dentist,
-        Roles.DentalNurse => StaffType.DentalAssistant,
-        Roles.Receptionist => StaffType.Receptionist,
-        _ => StaffType.OfficeManager,
-    };
 }

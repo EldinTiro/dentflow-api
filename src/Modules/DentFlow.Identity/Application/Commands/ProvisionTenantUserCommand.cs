@@ -16,7 +16,10 @@ public record ProvisionTenantUserCommand(
 
 public record ProvisionTenantUserResult(Guid UserId, string Email, string TempPassword);
 
-public class ProvisionTenantUserCommandHandler(IUserProvisioningService userProvisioningService)
+public class ProvisionTenantUserCommandHandler(
+    IUserProvisioningService userProvisioningService,
+    IStaffDirectory staff,
+    ITransactionRunner transaction)
     : IRequestHandler<ProvisionTenantUserCommand, ErrorOr<ProvisionTenantUserResult>>
 {
     public async Task<ErrorOr<ProvisionTenantUserResult>> Handle(
@@ -24,14 +27,20 @@ public class ProvisionTenantUserCommandHandler(IUserProvisioningService userProv
     {
         var tempPassword = TemporaryPassword.Generate();
 
-        var result = await userProvisioningService.CreateUserAsync(
-            command.Email, tempPassword,
-            command.FirstName, command.LastName,
-            command.Role, command.TenantId, ct);
+        // Account and staff profile together, or neither (DT-07).
+        return await transaction.ExecuteAsync<ProvisionTenantUserResult>(async innerCt =>
+        {
+            var result = await userProvisioningService.CreateUserAsync(
+                command.Email, tempPassword,
+                command.FirstName, command.LastName,
+                command.Role, command.TenantId, innerCt);
+            if (result.IsError) return result.Errors;
 
-        if (result.IsError) return result.Errors;
+            await staff.CreateLinkedProfileAsync(result.Value, command.TenantId,
+                command.FirstName, command.LastName, command.Email, command.Role, innerCt);
 
-        return new ProvisionTenantUserResult(result.Value, command.Email, tempPassword);
+            return new ProvisionTenantUserResult(result.Value, command.Email, tempPassword);
+        }, ct);
     }
 }
 
