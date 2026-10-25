@@ -35,6 +35,10 @@ public record StaffMemberResponse(
     public static StaffMemberResponse FromEntity(StaffMember s, StaffAccessSummary? access) =>
         FromEntity(s) with { Access = access };
 
+    /// <summary>DT-34: without people.manage, only whether the person can sign in.</summary>
+    public static StaffAccessSummary? Redacted(StaffAccessSummary? access, bool details) =>
+        access is null || details ? access : access with { Role = null, MustChangePassword = false, LastLoginAt = null };
+
     public static StaffMemberResponse FromEntity(StaffMember s) => new(
         s.Id,
         s.StaffType,

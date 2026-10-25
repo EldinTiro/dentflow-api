@@ -21,6 +21,7 @@ public class GetStaffMemberByIdQueryHandler(IStaffRepository staffRepository, IU
             return StaffMemberResponse.FromEntity(staffMember, null);
 
         var summaries = await accounts.GetSummariesAsync([userId], cancellationToken);
-        return StaffMemberResponse.FromEntity(staffMember, summaries.GetValueOrDefault(userId));
+        return StaffMemberResponse.FromEntity(staffMember,
+            StaffMemberResponse.Redacted(summaries.GetValueOrDefault(userId), query.AccessDetails));
     }
 }

@@ -36,7 +36,7 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
             ? parsed
             : null;
 
-        var result = await sender.Send(new ListStaffMembersQuery(staffType, isActive, page, pageSize, searchTerm), ct);
+        var result = await sender.Send(new ListStaffMembersQuery(staffType, isActive, page, pageSize, searchTerm, this.Can(DentFlow.Domain.Identity.Permission.PeopleManage)), ct);
 
         if (result.IsError)
         {

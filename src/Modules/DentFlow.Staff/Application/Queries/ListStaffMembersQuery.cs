@@ -9,5 +9,6 @@ public record ListStaffMembersQuery(
     bool? IsActive = null,
     int Page = 1,
     int PageSize = 20,
-    string? SearchTerm = null) : IRequest<ErrorOr<PagedResult<StaffMemberResponse>>>;
+    string? SearchTerm = null,
+    bool AccessDetails = true) : IRequest<ErrorOr<PagedResult<StaffMemberResponse>>>;
 

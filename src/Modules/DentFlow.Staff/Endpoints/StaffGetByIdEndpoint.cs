@@ -21,7 +21,7 @@ public class StaffGetByIdEndpoint(ISender sender) : EndpointWithoutRequest<Staff
     public override async Task HandleAsync(CancellationToken ct)
     {
         var id = Route<Guid>("id");
-        var result = await sender.Send(new GetStaffMemberByIdQuery(id), ct);
+        var result = await sender.Send(new GetStaffMemberByIdQuery(id, this.Can(DentFlow.Domain.Identity.Permission.PeopleManage)), ct);
         if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendOkAsync(result.Value, ct);
     }
