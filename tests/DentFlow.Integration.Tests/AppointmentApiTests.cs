@@ -241,6 +241,26 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         return (patient!.Id, staff!.Id, type!.Id);
     }
 
+    // DT-08: one patient could be booked with two dentists at the same time
+    [Fact]
+    public async Task BookAppointment_SamePatientSameTimeWithAnotherProvider_Returns409()
+    {
+        var (patientId, providerA, typeId) = await SeedBookingPrerequisites();
+        var (_, providerB, _) = await SeedBookingPrerequisites();
+        var start = DateTime.UtcNow.Date.AddDays(12).AddHours(9);
+        object Body(Guid providerId) => new
+        {
+            patientId, providerId, appointmentTypeId = typeId,
+            startAt = start.ToString("o"), endAt = start.AddMinutes(45).ToString("o"), source = "Staff",
+        };
+
+        (await _admin.PostAsJsonAsync("/api/v1/appointments", Body(providerA))).StatusCode.Should().Be(HttpStatusCode.Created);
+        var second = await _admin.PostAsJsonAsync("/api/v1/appointments", Body(providerB));
+
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await second.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Appointment.PatientConflict");
+    }
+
     // People-merge plan B3 / D11
     [Fact]
     public async Task BookAppointment_ForAnInactivePatient_Returns409()

@@ -56,6 +56,44 @@ public class BookAppointmentCommandHandlerTests
         await _repo.DidNotReceive().AddAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
     }
 
+    // ── DT-08: rules the server must enforce, not only the UI ──────────────
+
+    private BookAppointmentCommand BookableCommand()
+    {
+        var command = ValidCommand();
+        _typeRepo.GetByIdAsync(command.AppointmentTypeId, Arg.Any<CancellationToken>())
+                 .Returns(AppointmentType.Create("Checkup", 60));
+        return command;
+    }
+
+    [Theory]
+    [InlineData(false, true, "Appointment.ProviderInactive")]
+    [InlineData(true, false, "Appointment.ProviderNotBookable")]
+    public async Task Handle_ProviderWhoCannotBeBooked_ReturnsConflict(bool isActive, bool isBookable, string code)
+    {
+        var command = BookableCommand();
+        _staff.GetBookabilityAsync(command.ProviderId, Arg.Any<CancellationToken>())
+              .Returns(new StaffBookability(isActive, isBookable && isActive));
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.FirstError.Code.Should().Be(code);
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_PatientAlreadyBookedAtThatTime_ReturnsConflict()
+    {
+        var command = BookableCommand();
+        _repo.HasPatientConflictAsync(command.PatientId, command.StartAt, command.EndAt, null, Arg.Any<CancellationToken>())
+             .Returns(true);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Appointment.PatientConflict");
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task Handle_ValidCommand_BooksAppointment()
     {

@@ -37,6 +37,10 @@ public class RescheduleAppointmentCommandHandler(
         if (hasConflict)
             return AppointmentErrors.ProviderConflict;
 
+        if (await repo.HasPatientConflictAsync(
+                appointment.PatientId, command.NewStartAt, command.NewEndAt, command.Id, cancellationToken))
+            return AppointmentErrors.PatientConflict;
+
         appointment.Reschedule(command.NewStartAt, command.NewEndAt);
         await repo.UpdateAsync(appointment, cancellationToken);
 

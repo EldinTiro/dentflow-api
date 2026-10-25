@@ -7,6 +7,15 @@ public static class AppointmentErrors
     public static readonly Error ProviderNotFound =
         Error.NotFound("Staff.NotFound", "The selected provider was not found.");
 
+    public static readonly Error ProviderInactive =
+        Error.Conflict("Appointment.ProviderInactive", "This provider is inactive and can't be booked.");
+
+    public static readonly Error ProviderNotBookable =
+        Error.Conflict("Appointment.ProviderNotBookable", "This staff member doesn't take appointments.");
+
+    public static readonly Error PatientConflict =
+        Error.Conflict("Appointment.PatientConflict", "This patient already has an appointment at this time.");
+
     public static readonly Error PatientInactive =
         Error.Conflict("Patient.Inactive", "This patient is inactive. Reactivate them before booking.");
 

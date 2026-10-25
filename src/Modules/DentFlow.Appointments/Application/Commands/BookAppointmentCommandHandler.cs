@@ -28,6 +28,11 @@ public class BookAppointmentCommandHandler(
         var provider = await staff.GetBookabilityAsync(command.ProviderId, cancellationToken);
         if (provider is null)
             return AppointmentErrors.ProviderNotFound;
+        // DT-08: the booking UI already hides these; the API has to refuse them too (D11, D3).
+        if (!provider.IsActive)
+            return AppointmentErrors.ProviderInactive;
+        if (!provider.IsBookable)
+            return AppointmentErrors.ProviderNotBookable;
 
         var appointmentType = await appointmentTypeRepository.GetByIdAsync(command.AppointmentTypeId, cancellationToken);
         if (appointmentType is null)
@@ -42,6 +47,10 @@ public class BookAppointmentCommandHandler(
             command.ProviderId, command.StartAt, command.EndAt, null, cancellationToken);
         if (hasConflict)
             return AppointmentErrors.ProviderConflict;
+
+        if (await appointmentRepository.HasPatientConflictAsync(
+                command.PatientId, command.StartAt, command.EndAt, null, cancellationToken))
+            return AppointmentErrors.PatientConflict;
 
         var appointment = Appointment.Create(
             command.PatientId,

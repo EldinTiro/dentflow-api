@@ -18,6 +18,35 @@ public class BookAppointmentCommandValidator : AbstractValidator<BookAppointment
             .NotEmpty()
             .GreaterThan(x => x.StartAt)
             .WithMessage("End time must be after start time.");
+        RuleFor(x => x)
+            .Must(x => x.EndAt - x.StartAt <= AppointmentLimits.MaxLength)
+            .WithName("EndAt")
+            .WithMessage("An appointment can be at most 8 hours long.");
+        RuleFor(x => x.StartAt)
+            .Must(startAt => startAt <= DateTime.UtcNow.AddYears(AppointmentLimits.BookingHorizonYears))
+            .WithMessage("An appointment can be booked at most two years ahead.");
+        RuleFor(x => x.Notes).MaximumLength(AppointmentLimits.MaxNotesLength);
+        RuleFor(x => x.ChiefComplaint).MaximumLength(AppointmentLimits.MaxNotesLength);
     }
 }
 
+public class RescheduleAppointmentCommandValidator : AbstractValidator<RescheduleAppointmentCommand>
+{
+    public RescheduleAppointmentCommandValidator()
+    {
+        RuleFor(x => x.NewEndAt).GreaterThan(x => x.NewStartAt).WithMessage("End time must be after start time.");
+        RuleFor(x => x)
+            .Must(x => x.NewEndAt - x.NewStartAt <= AppointmentLimits.MaxLength)
+            .WithName("NewEndAt")
+            .WithMessage("An appointment can be at most 8 hours long.");
+        RuleFor(x => x.NewStartAt)
+            .Must(startAt => startAt <= DateTime.UtcNow.AddYears(AppointmentLimits.BookingHorizonYears))
+            .WithMessage("An appointment can be booked at most two years ahead.");
+    }
+}
+
+public class UpdateAppointmentNotesCommandValidator : AbstractValidator<UpdateAppointmentNotesCommand>
+{
+    public UpdateAppointmentNotesCommandValidator() =>
+        RuleFor(x => x.Notes).MaximumLength(AppointmentLimits.MaxNotesLength);
+}
