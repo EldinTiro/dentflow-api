@@ -106,6 +106,7 @@ public class Tenant : BaseEntity { }
 - **Timestamps**: `DateTime` always UTC, column type `TIMESTAMPTZ`
 - **Soft deletes**: Set `IsDeleted = true` + `DeletedAt` — never `DELETE FROM`
 - **Naming**: snake_case tables, set explicitly per entity via `.ToTable("snake_case_name")` in `ApplicationDbContext` / the `Persistence/Configurations/` classes. There is **no** `UseSnakeCaseNamingConvention()` call — new entities must declare their table name themselves
+- **Patient-scoped requests**: a command or query that takes a `Guid PatientId` must implement `IPatientScoped`; `PatientScopeBehavior` then answers 404 `Patient.NotFound` unless that patient exists in the caller's clinic. `PatientScopeRules` (architecture tests) enforces it. Never trust a patient or provider id from the request as a bare foreign key (DT-01/02)
 - **Tenant scoping**: Automatic via EF global query filters — never add manual `WHERE tenant_id = ...`, and never `IgnoreQueryFilters()` + a hand-written tenant check (that is how the dashboard read zeros for every clinic, QA-003). Tenant resolves from the `tid` claim, then the subdomain; `TenantStore` reads the `tenants` table
 - **No raw SQL** for business logic — use EF Core; raw SQL only for reporting queries
 
@@ -155,6 +156,8 @@ if (patient is null) return PatientErrors.NotFound;
 - JWT Bearer. Access token expiry: 15 min in production, 60 min in Development
 - **Refresh tokens**: `/auth/refresh` rotates an HttpOnly cookie (path `/api/v1/auth`) and revokes the whole family on reuse; `/auth/logout` revokes it. Only a hash is stored
 - **Suspended clinics**: a deactivated tenant cannot log in (403 `Tenant.Inactive`) or refresh, and `SuspendedTenantMiddleware` answers 403 to its existing access tokens
+- **Deactivated users**: `DeactivatedUserMiddleware` answers 401 `Auth.AccountInactive` to an inactive account's open session, at once
+- **Login protection**: 5 failed passwords lock the account for 15 minutes (403 `Auth.AccountLocked`); login is rate-limited per tenant host + client IP (`RateLimiting:LoginPerMinute`, default 20) and everything per tenant host (`RateLimiting:PerTenantPerMinute`, default 300). Rejections are 429. Behind a proxy the IP is the proxy's until forwarded headers are configured
 - **Temporary passwords**: users created by invite/provisioning or reset by an admin get `MustChangePassword`; their token carries `pwd_change` and `PasswordChangeRequiredMiddleware` blocks everything but `/auth/*` and `/users/me*` until they change it
 - **User-management guards** live in the Identity handlers (`UserManagementGuard`): no self role-change/deactivation, a clinic keeps an active owner, the platform keeps an active SuperAdmin, only owners touch owners
 - Roles — **5**, defined in `Domain/Identity/Roles.cs`: `SuperAdmin`, `ClinicOwner`, `Dentist`, `DentalNurse`, `Receptionist` (`Roles.TenantRoles` = the four clinic roles). Retired roles (`ClinicAdmin`, `Hygienist`, `BillingStaff`, `ReadOnly`) are mapped or deactivated at startup by `SuperAdminSeeder.SyncRolesAsync`
