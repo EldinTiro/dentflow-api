@@ -42,12 +42,23 @@ public class LoginEndpoint(
             return;
         }
 
+        // DT-05: failures are counted; 5 lock the account for 15 minutes (Identity lockout
+        // options). Checked before the password so a locked account can't be probed further.
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            await this.SendResultErrorsAsync([IdentityErrors.AccountLocked], ct);
+            return;
+        }
+
         var passwordValid = await userManager.CheckPasswordAsync(user, req.Password);
         if (!passwordValid)
         {
+            await userManager.AccessFailedAsync(user);
             await SendUnauthorizedAsync(ct);
             return;
         }
+
+        await userManager.ResetAccessFailedCountAsync(user);
 
         // Checked only after the password, so it does not reveal which emails exist.
         if (await db.IsTenantSuspendedAsync(user.TenantId, ct))

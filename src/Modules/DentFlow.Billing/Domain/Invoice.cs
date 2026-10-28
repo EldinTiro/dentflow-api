@@ -20,7 +20,8 @@ public class Invoice : TenantAuditableEntity
 
     public decimal SubTotal => _lineItems.Sum(i => i.LineTotal);
     public decimal PaidAmount => _payments.Sum(p => p.Amount);
-    public decimal BalanceDue => SubTotal - PaidAmount;
+    // A void invoice is not owed (DT-03); it can only be voided before any payment.
+    public decimal BalanceDue => Status == InvoiceStatus.Void ? 0m : SubTotal - PaidAmount;
 
     /// <summary>Past its due date with money still owed (QA-025).</summary>
     public bool IsOverdueAt(DateTime utcNow) =>
@@ -110,10 +111,20 @@ public class Invoice : TenantAuditableEntity
         SetUpdated();
     }
 
-    public void Void()
+    /// <summary>
+    /// DT-03: only an invoice with no payment can be voided. With money received the
+    /// payment has to be refunded first, or it would stay in revenue and cash-up with no
+    /// invoice behind it.
+    /// </summary>
+    public ErrorOr<Success> Void()
     {
+        if (Status == InvoiceStatus.Void) return BillingErrors.CannotModifyVoidedInvoice;
+        if (Status == InvoiceStatus.Paid) return BillingErrors.CannotVoidPaidInvoice;
+        if (PaidAmount > 0) return BillingErrors.CannotVoidWithPayments;
+
         Status = InvoiceStatus.Void;
         SetUpdated();
+        return Result.Success;
     }
 
     private void RecalculateStatus()

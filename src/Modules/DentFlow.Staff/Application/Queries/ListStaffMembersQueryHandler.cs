@@ -24,7 +24,8 @@ public class ListStaffMembersQueryHandler(IStaffRepository staffRepository, IUse
         var linked = items.Where(s => s.UserId is not null).Select(s => s.UserId!.Value).ToList();
         var summaries = await accounts.GetSummariesAsync(linked, cancellationToken);
         var responses = items
-            .Select(s => StaffMemberResponse.FromEntity(s, s.UserId is { } id ? summaries.GetValueOrDefault(id) : null))
+            .Select(s => StaffMemberResponse.FromEntity(s, StaffMemberResponse.Redacted(
+                s.UserId is { } id ? summaries.GetValueOrDefault(id) : null, query.AccessDetails)))
             .ToList();
 
         return new PagedResult<StaffMemberResponse>(responses, total, query.Page, query.PageSize);

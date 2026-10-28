@@ -37,6 +37,10 @@ public class RescheduleAppointmentCommandHandler(
         if (hasConflict)
             return AppointmentErrors.ProviderConflict;
 
+        if (await repo.HasPatientConflictAsync(
+                appointment.PatientId, command.NewStartAt, command.NewEndAt, command.Id, cancellationToken))
+            return AppointmentErrors.PatientConflict;
+
         appointment.Reschedule(command.NewStartAt, command.NewEndAt);
         await repo.UpdateAsync(appointment, cancellationToken);
 
@@ -94,6 +98,11 @@ public class UpdateAppointmentStatusCommandHandler(IAppointmentRepository repo)
         if (!AppointmentStatus.CanTransitionTo(appointment.Status, command.NewStatus))
             return AppointmentErrors.InvalidTransition(appointment.Status, command.NewStatus);
 
+        // DT-09: no check-in, treatment or no-show for a visit days away.
+        if (command.NewStatus is not AppointmentStatus.Cancelled
+            && DateTime.UtcNow < appointment.StartAt - AppointmentLimits.ArrivalWindowBeforeStart)
+            return AppointmentErrors.NotYetDue;
+
         var fromStatus = appointment.Status;
 
         switch (command.NewStatus)
@@ -128,6 +137,10 @@ public class OverrideAppointmentStatusCommandHandler(IAppointmentRepository repo
         var appointment = await repo.GetByIdAsync(command.Id, cancellationToken);
         if (appointment is null)
             return AppointmentErrors.NotFound;
+
+        // An override to the status it already has would only leave an empty audit entry.
+        if (appointment.Status == command.NewStatus)
+            return AppointmentErrors.SameStatus;
 
         var fromStatus = appointment.Status;
         appointment.ForceStatus(command.NewStatus);

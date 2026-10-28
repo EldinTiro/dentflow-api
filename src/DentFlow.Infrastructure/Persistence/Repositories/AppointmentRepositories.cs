@@ -10,6 +10,22 @@ public class AppointmentRepository(ApplicationDbContext dbContext) : IAppointmen
     public async Task<Appointment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await dbContext.Set<Appointment>().FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
+    public async Task<bool> HasPatientConflictAsync(
+        Guid patientId, DateTime startAt, DateTime endAt, Guid? excludeAppointmentId, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Set<Appointment>()
+            .Where(a => a.PatientId == patientId
+                && a.Status != AppointmentStatus.Cancelled
+                && a.Status != AppointmentStatus.NoShow
+                && a.StartAt < endAt
+                && a.EndAt > startAt);
+
+        if (excludeAppointmentId.HasValue)
+            query = query.Where(a => a.Id != excludeAppointmentId.Value);
+
+        return await query.AnyAsync(cancellationToken);
+    }
+
     public async Task<bool> HasProviderConflictAsync(
         Guid providerId, DateTime startAt, DateTime endAt, Guid? excludeAppointmentId, CancellationToken cancellationToken = default)
     {

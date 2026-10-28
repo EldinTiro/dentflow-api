@@ -15,11 +15,13 @@ public class BookAppointmentCommandHandlerTests
     private readonly IAppointmentTypeRepository _typeRepo = Substitute.For<IAppointmentTypeRepository>();
     private readonly IProviderBlockedTimeChecker _blockedTimeChecker = Substitute.For<IProviderBlockedTimeChecker>();
     private readonly IPatientDirectory _patients = Substitute.For<IPatientDirectory>();
+    private readonly IStaffDirectory _staff = Substitute.For<IStaffDirectory>();
     private readonly BookAppointmentCommandHandler _sut;
 
     public BookAppointmentCommandHandlerTests()
     {
-        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo, _blockedTimeChecker, _patients);
+        _staff.GetBookabilityAsync(default, default).ReturnsForAnyArgs(new StaffBookability(true, true));
+        _sut = new BookAppointmentCommandHandler(_repo, _typeRepo, _blockedTimeChecker, _patients, _staff);
     }
 
     private static BookAppointmentCommand ValidCommand(DateTime? startAt = null, DateTime? endAt = null)
@@ -51,6 +53,44 @@ public class BookAppointmentCommandHandlerTests
         var result = await _sut.Handle(command, CancellationToken.None);
 
         result.FirstError.Code.Should().Be("Patient.Inactive");
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
+    }
+
+    // ── DT-08: rules the server must enforce, not only the UI ──────────────
+
+    private BookAppointmentCommand BookableCommand()
+    {
+        var command = ValidCommand();
+        _typeRepo.GetByIdAsync(command.AppointmentTypeId, Arg.Any<CancellationToken>())
+                 .Returns(AppointmentType.Create("Checkup", 60));
+        return command;
+    }
+
+    [Theory]
+    [InlineData(false, true, "Appointment.ProviderInactive")]
+    [InlineData(true, false, "Appointment.ProviderNotBookable")]
+    public async Task Handle_ProviderWhoCannotBeBooked_ReturnsConflict(bool isActive, bool isBookable, string code)
+    {
+        var command = BookableCommand();
+        _staff.GetBookabilityAsync(command.ProviderId, Arg.Any<CancellationToken>())
+              .Returns(new StaffBookability(isActive, isBookable && isActive));
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.FirstError.Code.Should().Be(code);
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_PatientAlreadyBookedAtThatTime_ReturnsConflict()
+    {
+        var command = BookableCommand();
+        _repo.HasPatientConflictAsync(command.PatientId, command.StartAt, command.EndAt, null, Arg.Any<CancellationToken>())
+             .Returns(true);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Appointment.PatientConflict");
         await _repo.DidNotReceive().AddAsync(Arg.Any<Appointment>(), Arg.Any<CancellationToken>());
     }
 
@@ -141,6 +181,60 @@ public class BookAppointmentCommandHandlerTests
 public class AppointmentStatusCommandHandlerTests
 {
     private readonly IAppointmentRepository _repo = Substitute.For<IAppointmentRepository>();
+
+    private Appointment ExistingAt(DateTime startAt)
+    {
+        var appointment = Appointment.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), startAt, startAt.AddMinutes(30));
+        _repo.GetByIdAsync(appointment.Id, Arg.Any<CancellationToken>()).Returns(appointment);
+        return appointment;
+    }
+
+    // DT-09: treatment could be started on a visit 15 days ahead
+    [Theory]
+    [InlineData(AppointmentStatus.CheckedIn)]
+    [InlineData(AppointmentStatus.InProgress)]
+    [InlineData(AppointmentStatus.NoShow)]
+    public async Task UpdateStatus_DaysBeforeTheVisit_IsRefused(string status)
+    {
+        var appointment = ExistingAt(DateTime.UtcNow.AddDays(15));
+
+        var result = await new UpdateAppointmentStatusCommandHandler(_repo)
+            .Handle(new UpdateAppointmentStatusCommand(appointment.Id, status), CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Appointment.NotYetDue");
+        appointment.Status.Should().Be(AppointmentStatus.Scheduled);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_CheckInEarlierTheSameDay_IsAllowed()
+    {
+        var appointment = ExistingAt(DateTime.UtcNow.AddHours(3));
+
+        var result = await new UpdateAppointmentStatusCommandHandler(_repo)
+            .Handle(new UpdateAppointmentStatusCommand(appointment.Id, AppointmentStatus.CheckedIn), CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Override_ToTheSameStatus_IsRefused_AndLeavesNoAuditEntry()
+    {
+        var appointment = ExistingAt(DateTime.UtcNow.AddHours(1));
+
+        var result = await new OverrideAppointmentStatusCommandHandler(_repo)
+            .Handle(new OverrideAppointmentStatusCommand(appointment.Id, AppointmentStatus.Scheduled, "Fix", null), CancellationToken.None);
+
+        result.FirstError.Code.Should().Be("Appointment.SameStatus");
+        await _repo.DidNotReceive().AddHistoryAsync(Arg.Any<AppointmentStatusHistory>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void Override_WithoutAReason_IsRejected(string? reason) =>
+        new OverrideAppointmentStatusCommandValidator()
+            .Validate(new OverrideAppointmentStatusCommand(Guid.NewGuid(), AppointmentStatus.Completed, reason, null))
+            .IsValid.Should().BeFalse();
 
     [Fact]
     public async Task CancelAppointment_CompletedAppointment_ReturnsError()

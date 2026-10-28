@@ -25,8 +25,7 @@ public class PatientListEndpoint(ISender sender) : EndpointWithoutRequest<PagedR
         var recallFilter = Query<string?>("recallFilter", isRequired: false);
         var pageStr = Query<string?>("page", isRequired: false);
         var pageSizeStr = Query<string?>("pageSize", isRequired: false);
-        var page = int.TryParse(pageStr, out var p) ? p : 1;
-        var pageSize = Math.Min(int.TryParse(pageSizeStr, out var ps) ? ps : 20, 100);
+        var (page, pageSize) = Paging.Normalize(pageStr, pageSizeStr, defaultSize: 20, max: 100);
 
         // People-merge plan D11: Active unless asked otherwise; "all" lifts the filter.
         PatientStatus? status = string.Equals(statusStr, "all", StringComparison.OrdinalIgnoreCase)

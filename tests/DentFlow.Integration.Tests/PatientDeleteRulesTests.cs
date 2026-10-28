@@ -47,4 +47,19 @@ public class PatientDeleteRulesTests(DentFlowAppFactory factory)
         (await response.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Patient.HasHistory");
         (await client.GetAsync($"/api/v1/patients/{patientId}")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    // DT-19: "Delete duplicate" was offered on patients with history; the page needs to know
+    private record HistoryDto(bool HasHistory);
+
+    [Fact]
+    public async Task ThePatient_SaysWhetherItHasHistory()
+    {
+        var client = factory.CreateAuthenticatedClient([Roles.Receptionist]);
+        var fresh = await NewPatientAsync(client);
+        var withVisit = await NewPatientAsync(client);
+        await AppointmentSeed.BookAsync(factory, withVisit, DateTime.UtcNow.AddDays(-5));
+
+        (await client.GetFromJsonAsync<HistoryDto>($"/api/v1/patients/{fresh}"))!.HasHistory.Should().BeFalse();
+        (await client.GetFromJsonAsync<HistoryDto>($"/api/v1/patients/{withVisit}"))!.HasHistory.Should().BeTrue();
+    }
 }

@@ -116,6 +116,18 @@ public class StaffMember : TenantAuditableEntity
     public string FullName => $"{FirstName} {LastName}";
 
     /// <summary>
+    /// The staff type for a profile made from an account (backfill, provisioning). Owners
+    /// who don't treat patients get a non-bookable profile (people-merge D3).
+    /// </summary>
+    public static StaffType TypeForAccountRole(string? role) => role switch
+    {
+        DentFlow.Domain.Identity.Roles.Dentist => StaffType.Dentist,
+        DentFlow.Domain.Identity.Roles.DentalNurse => StaffType.DentalAssistant,
+        DentFlow.Domain.Identity.Roles.Receptionist => StaffType.Receptionist,
+        _ => StaffType.OfficeManager,
+    };
+
+    /// <summary>
     /// Can appear in provider lists and be booked (people-merge plan D3). Decided here,
     /// not in the web app: clinical people only, and never while inactive.
     /// </summary>

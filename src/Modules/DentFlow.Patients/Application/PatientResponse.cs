@@ -33,7 +33,10 @@ public record PatientResponse(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     DateTime? DeactivatedAt,
-    string? DeactivationReason)
+    string? DeactivationReason,
+    // Only on GET /patients/{id}: whether "Delete duplicate" can work (DT-19, D9).
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    bool? HasHistory = null)
 {
     public static PatientResponse FromEntity(Patient p) => new(
         p.Id,

@@ -13,7 +13,8 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
     public override void Configure()
     {
         Get("/staff");
-        Roles([.. DomainRoles.All]);
+        // Clinic roles only; the platform admin has no clinic data (DT-18).
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "List staff members with optional filters (default active; isActive=all for everyone)");
     }
@@ -29,14 +30,13 @@ public class StaffListEndpoint(ISender sender) : EndpointWithoutRequest<PagedRes
             : bool.TryParse(isActiveStr, out var active) ? active : true;
         var pageStr = Query<string?>("page", isRequired: false);
         var pageSizeStr = Query<string?>("pageSize", isRequired: false);
-        var page = int.TryParse(pageStr, out var p) ? p : 1;
-        var pageSize = Math.Min(int.TryParse(pageSizeStr, out var ps) ? ps : 20, 100);
+        var (page, pageSize) = Paging.Normalize(pageStr, pageSizeStr, defaultSize: 20, max: 100);
 
         StaffType? staffType = Enum.TryParse<StaffType>(staffTypeStr, ignoreCase: true, out var parsed)
             ? parsed
             : null;
 
-        var result = await sender.Send(new ListStaffMembersQuery(staffType, isActive, page, pageSize, searchTerm), ct);
+        var result = await sender.Send(new ListStaffMembersQuery(staffType, isActive, page, pageSize, searchTerm, this.Can(DentFlow.Domain.Identity.Permission.PeopleManage)), ct);
 
         if (result.IsError)
         {

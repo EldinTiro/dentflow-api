@@ -3,8 +3,23 @@ using FluentValidation;
 using MediatR;
 using DentFlow.Billing.Application.Interfaces;
 using DentFlow.Billing.Domain;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Billing.Application.Commands;
+
+// ── Money rules (DT-11) ─────────────────────────────────────────────────────
+
+/// <summary>
+/// Amounts are whole cents, and a line stays far below NUMERIC(10,2) (99,999,999.99): a
+/// 1e12 fee ended in a database overflow (500) and 0.001 became a 0.00 payment row.
+/// </summary>
+public static class MoneyRules
+{
+    public const decimal MaxUnitFee = 100_000m;
+    public const int MaxQuantity = 100;
+
+    public static bool IsWholeCents(decimal amount) => decimal.Round(amount, 2) == amount;
+}
 
 // ── Create Invoice ──────────────────────────────────────────────────────────
 
@@ -21,7 +36,7 @@ public record CreateInvoiceCommand(
     DateTime? DueDate,
     string? Notes,
     IReadOnlyList<CreateInvoiceLineItemRequest> LineItems)
-    : IRequest<ErrorOr<InvoiceResponse>>;
+    : IPatientScoped, IRequest<ErrorOr<InvoiceResponse>>;
 
 public class CreateInvoiceCommandHandler(IInvoiceRepository repo)
     : IRequestHandler<CreateInvoiceCommand, ErrorOr<InvoiceResponse>>
@@ -56,11 +71,13 @@ public class CreateInvoiceCommandValidator : AbstractValidator<CreateInvoiceComm
             .GreaterThanOrEqualTo(DateTime.UtcNow.Date)
             .When(x => x.DueDate.HasValue)
             .WithMessage("Due date must be today or in the future.");
+        RuleFor(x => x.LineItems).NotEmpty().WithMessage("An invoice needs at least one line.");
         RuleForEach(x => x.LineItems).ChildRules(item =>
         {
             item.RuleFor(i => i.Description).NotEmpty().MaximumLength(500);
-            item.RuleFor(i => i.Quantity).GreaterThan(0);
-            item.RuleFor(i => i.UnitFee).GreaterThanOrEqualTo(0);
+            item.RuleFor(i => i.Quantity).InclusiveBetween(1, MoneyRules.MaxQuantity);
+            item.RuleFor(i => i.UnitFee).InclusiveBetween(0, MoneyRules.MaxUnitFee)
+                .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
         });
     }
 }
@@ -134,8 +151,9 @@ public class AddLineItemCommandValidator : AbstractValidator<AddLineItemCommand>
     {
         RuleFor(x => x.InvoiceId).NotEmpty();
         RuleFor(x => x.Description).NotEmpty().MaximumLength(500);
-        RuleFor(x => x.Quantity).GreaterThan(0);
-        RuleFor(x => x.UnitFee).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Quantity).InclusiveBetween(1, MoneyRules.MaxQuantity);
+        RuleFor(x => x.UnitFee).InclusiveBetween(0, MoneyRules.MaxUnitFee)
+            .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
     }
 }
 
@@ -177,8 +195,9 @@ public class UpdateLineItemCommandValidator : AbstractValidator<UpdateLineItemCo
         RuleFor(x => x.InvoiceId).NotEmpty();
         RuleFor(x => x.LineItemId).NotEmpty();
         RuleFor(x => x.Description).NotEmpty().MaximumLength(500);
-        RuleFor(x => x.Quantity).GreaterThan(0);
-        RuleFor(x => x.UnitFee).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Quantity).InclusiveBetween(1, MoneyRules.MaxQuantity);
+        RuleFor(x => x.UnitFee).InclusiveBetween(0, MoneyRules.MaxUnitFee)
+            .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
     }
 }
 
@@ -217,9 +236,9 @@ public class VoidInvoiceCommandHandler(IInvoiceRepository repo)
     {
         var invoice = await repo.GetByIdWithDetailsAsync(cmd.InvoiceId, ct);
         if (invoice is null) return BillingErrors.InvoiceNotFound;
-        if (invoice.Status == InvoiceStatus.Paid) return BillingErrors.CannotVoidPaidInvoice;
+        var voided = invoice.Void();
+        if (voided.IsError) return voided.Errors;
 
-        invoice.Void();
         await repo.UpdateAsync(invoice, ct);
         return InvoiceResponse.FromEntity(invoice);
     }
@@ -248,6 +267,8 @@ public class RecordPaymentCommandHandler(IInvoiceRepository repo)
         if (invoice is null) return BillingErrors.InvoiceNotFound;
         if (invoice.Status == InvoiceStatus.Void) return BillingErrors.CannotModifyVoidedInvoice;
         if (cmd.Amount > invoice.BalanceDue) return BillingErrors.PaymentExceedsBalance;
+        // A day of slack: the invoice is stamped in UTC, the payment date is picked in local time.
+        if (cmd.PaidAt < invoice.IssuedAt.Date.AddDays(-1)) return BillingErrors.PaymentBeforeInvoice;
 
         var method = Enum.Parse<PaymentMethod>(cmd.Method, ignoreCase: true);
         var payment = InvoicePayment.Create(invoice.Id, cmd.Amount, method, cmd.PaidAt, cmd.Reference, cmd.Notes);
@@ -268,7 +289,8 @@ public class RecordPaymentCommandValidator : AbstractValidator<RecordPaymentComm
     public RecordPaymentCommandValidator()
     {
         RuleFor(x => x.InvoiceId).NotEmpty();
-        RuleFor(x => x.Amount).GreaterThan(0);
+        RuleFor(x => x.Amount).GreaterThanOrEqualTo(0.01m).WithMessage("The amount must be at least 0.01.")
+            .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
         RuleFor(x => x.Method)
             .NotEmpty()
             .Must(v => AllowedMethods.Contains(v, StringComparer.OrdinalIgnoreCase))

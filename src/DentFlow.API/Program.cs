@@ -118,16 +118,35 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowCredentials()));
 
-// Rate limiting per tenant
+// Rate limiting: per tenant overall, and a tight limit on login attempts per client (DT-05).
+// Behind a reverse proxy the client IP is the proxy's until forwarded headers are configured,
+// so the login limit is per tenant host + IP and kept generous for a whole clinic.
+var loginPerMinute = builder.Configuration.GetValue("RateLimiting:LoginPerMinute", 20);
+var perTenantPerMinute = builder.Configuration.GetValue("RateLimiting:PerTenantPerMinute", 300);
 builder.Services.AddRateLimiter(options =>
-    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(
-        ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
-            ctx.Request.Host.Host,
-            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 300,
-                Window = TimeSpan.FromMinutes(1)
-            })));
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.CreateChained(
+        System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(
+            ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Request.Host.Host,
+                _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = perTenantPerMinute,
+                    Window = TimeSpan.FromMinutes(1)
+                })),
+        System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+            HttpMethods.IsPost(ctx.Request.Method)
+            && ctx.Request.Path.StartsWithSegments("/api/v1/auth/login", StringComparison.OrdinalIgnoreCase)
+                ? System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                    $"login:{ctx.Request.Host.Host}:{ctx.Connection.RemoteIpAddress}",
+                    _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = loginPerMinute,
+                        Window = TimeSpan.FromMinutes(1)
+                    })
+                : System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("other")));
+});
 
 // Localization — supported languages
 var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("bs"), new CultureInfo("de") };
@@ -193,6 +212,7 @@ app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseMultiTenant();
 app.UseMiddleware<DentFlow.API.Middleware.SuspendedTenantMiddleware>();
+app.UseMiddleware<DentFlow.API.Middleware.DeactivatedUserMiddleware>();
 app.UseMiddleware<DentFlow.API.Middleware.PasswordChangeRequiredMiddleware>();
 app.UseAuthorization();
 
@@ -204,6 +224,8 @@ app.UseFastEndpoints(c =>
     c.Versioning.PrependToRoute = true;
     c.Errors.UseProblemDetails();
 });
+// After UseFastEndpoints: it sets a camel-case display name for validation messages (DT-26).
+DentFlow.Application.Common.Behaviors.ReadableValidationNames.Use();
 
 // Swagger — always enabled for now (restrict to non-Production in future)
 app.UseSwaggerGen();

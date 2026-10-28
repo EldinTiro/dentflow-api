@@ -12,7 +12,7 @@ public class AppointmentRescheduleEndpoint(ISender sender) : Endpoint<Reschedule
     public override void Configure()
     {
         Put("/appointments/{id}/reschedule");
-        Roles("ClinicOwner", "Receptionist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Reschedule an appointment to a new time slot");
     }
@@ -37,7 +37,8 @@ public class AppointmentCancelEndpoint(ISender sender) : Endpoint<CancelAppointm
     public override void Configure()
     {
         Post("/appointments/{id}/cancel");
-        Roles("ClinicOwner", "Receptionist", "DentalNurse", "SuperAdmin");
+        // Every clinic role: a patient with a visit ahead can't be deactivated (D10, DT-12).
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Cancel an appointment");
     }
@@ -64,7 +65,7 @@ public class AppointmentUpdateStatusEndpoint(ISender sender) : Endpoint<UpdateSt
     public override void Configure()
     {
         Patch("/appointments/{id}/status");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Advance appointment status following the allowed lifecycle transitions");
     }
@@ -91,7 +92,7 @@ public class AppointmentOverrideStatusEndpoint(ISender sender) : Endpoint<Overri
     public override void Configure()
     {
         Post("/appointments/{id}/override-status");
-        Roles("ClinicOwner", "SuperAdmin");
+        Roles("ClinicOwner");
         Version(1);
         Summary(s => s.Summary = "Force-set any appointment status (admin override, bypasses lifecycle rules)");
     }
@@ -118,7 +119,7 @@ public class AppointmentUpdateNotesEndpoint(ISender sender) : Endpoint<UpdateNot
     public override void Configure()
     {
         Patch("/appointments/{id}/notes");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Update the notes field on an appointment");
     }
@@ -146,7 +147,7 @@ public class AppointmentGetHistoryEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/appointments/{id}/history");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Get the status change history for an appointment");
     }

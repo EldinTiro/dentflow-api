@@ -1,5 +1,6 @@
 using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Patients.Application.Commands;
 
@@ -8,4 +9,4 @@ public record AddEmergencyContactCommand(
     string Name,
     string? Relationship,
     string? PhonePrimary,
-    bool IsPrimary) : IRequest<ErrorOr<PatientEmergencyContactResponse>>;
+    bool IsPrimary) : IPatientScoped, IRequest<ErrorOr<PatientEmergencyContactResponse>>;

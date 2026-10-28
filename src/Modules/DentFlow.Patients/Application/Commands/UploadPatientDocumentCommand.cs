@@ -1,5 +1,6 @@
 using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Patients.Application.Commands;
 
@@ -11,4 +12,4 @@ public record UploadPatientDocumentCommand(
     Stream Content,
     string Category,
     string? Notes,
-    Guid UploadedByUserId) : IRequest<ErrorOr<PatientDocumentResponse>>;
+    Guid UploadedByUserId) : IPatientScoped, IRequest<ErrorOr<PatientDocumentResponse>>;

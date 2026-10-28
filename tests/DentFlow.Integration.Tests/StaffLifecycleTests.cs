@@ -223,4 +223,35 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await response.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("staff.HasHistory");
     }
+
+    // DT-34: nurses and receptionists saw a colleague's role and last sign-in
+    private record AccessDto(bool IsActive, string? Role, DateTime? LastLoginAt);
+    private record StaffWithAccessDto(Guid Id, AccessDto? Access);
+
+    [Fact]
+    public async Task OnlyTheOwnerSeesRoleAndLastSignIn_OthersSeeOnlyWhetherSomeoneCanSignIn()
+    {
+        var (slug, tenantId) = await ClinicAsync();
+        var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
+        var (_, dentistStaffId, dentistEmail) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, _, receptionistEmail) = await PersonAsync(tenantId, Roles.Receptionist, StaffType.Receptionist);
+        await SignedInAsync(slug, dentistEmail); // gives the dentist a last sign-in
+        var owner = await SignedInAsync(slug, ownerEmail);
+        var receptionist = await SignedInAsync(slug, receptionistEmail);
+
+        var seenByOwner = (await owner.GetFromJsonAsync<StaffWithAccessDto>($"/api/v1/staff/{dentistStaffId}"))!.Access!;
+        seenByOwner.Role.Should().Be(Roles.Dentist);
+        seenByOwner.LastLoginAt.Should().NotBeNull();
+
+        var seenByDesk = (await receptionist.GetFromJsonAsync<StaffWithAccessDto>($"/api/v1/staff/{dentistStaffId}"))!.Access!;
+        seenByDesk.IsActive.Should().BeTrue();
+        seenByDesk.Role.Should().BeNull();
+        seenByDesk.LastLoginAt.Should().BeNull();
+
+        var listed = (await receptionist.GetFromJsonAsync<StaffPageDto2>("/api/v1/staff"))!.Items.Single(s => s.Id == dentistStaffId).Access!;
+        listed.Role.Should().BeNull();
+        listed.LastLoginAt.Should().BeNull();
+    }
+
+    private record StaffPageDto2(List<StaffWithAccessDto> Items);
 }

@@ -22,6 +22,12 @@ public static class BillingErrors
     public static readonly Error CannotVoidPaidInvoice =
         Error.Conflict("Invoice.AlreadyPaid", "Cannot void a fully paid invoice.");
 
+    public static readonly Error CannotVoidWithPayments =
+        Error.Conflict("Invoice.HasPayments", "This invoice has payments recorded. Refund them before voiding the invoice.");
+
+    public static readonly Error PaymentBeforeInvoice =
+        Error.Validation("Invoice.PaymentBeforeInvoice", "A payment can't be dated before the invoice was issued.");
+
     public static readonly Error PaymentExceedsBalance =
         Error.Validation("Invoice.PaymentExceedsBalance", "Payment amount exceeds the remaining balance.");
 }

@@ -77,10 +77,11 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
             source = "Staff"
         });
 
-        // Same provider, overlapping time
+        // Same provider, overlapping time, another (real) patient — a random id is 404 since DT-02
+        var (otherPatientId, _, _) = await SeedBookingPrerequisites();
         var response = await _admin.PostAsJsonAsync("/api/v1/appointments", new
         {
-            patientId = Guid.NewGuid(), // different patient
+            patientId = otherPatientId,
             providerId,
             appointmentTypeId = typeId,
             startAt = start.AddMinutes(30).ToString("o"),
@@ -105,6 +106,18 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var appt = await response.Content.ReadFromJsonAsync<AppointmentDto>();
         appt!.Status.Should().Be("CheckedIn");
+    }
+
+    // DT-09: "Start treatment" worked on a visit two weeks ahead
+    [Fact]
+    public async Task StatusTransition_TwoWeeksAhead_Returns409()
+    {
+        var apptId = await CreateBookedAppointment(TimeSpan.FromDays(14));
+
+        var response = await _admin.PatchAsJsonAsync($"/api/v1/appointments/{apptId}/status", new { status = "InProgress" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await response.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Appointment.NotYetDue");
     }
 
     [Fact]
@@ -240,6 +253,26 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         return (patient!.Id, staff!.Id, type!.Id);
     }
 
+    // DT-08: one patient could be booked with two dentists at the same time
+    [Fact]
+    public async Task BookAppointment_SamePatientSameTimeWithAnotherProvider_Returns409()
+    {
+        var (patientId, providerA, typeId) = await SeedBookingPrerequisites();
+        var (_, providerB, _) = await SeedBookingPrerequisites();
+        var start = DateTime.UtcNow.Date.AddDays(12).AddHours(9);
+        object Body(Guid providerId) => new
+        {
+            patientId, providerId, appointmentTypeId = typeId,
+            startAt = start.ToString("o"), endAt = start.AddMinutes(45).ToString("o"), source = "Staff",
+        };
+
+        (await _admin.PostAsJsonAsync("/api/v1/appointments", Body(providerA))).StatusCode.Should().Be(HttpStatusCode.Created);
+        var second = await _admin.PostAsJsonAsync("/api/v1/appointments", Body(providerB));
+
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await second.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Appointment.PatientConflict");
+    }
+
     // People-merge plan B3 / D11
     [Fact]
     public async Task BookAppointment_ForAnInactivePatient_Returns409()
@@ -291,17 +324,19 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    private async Task<Guid> CreateBookedAppointment()
+    /// <summary>Due soon by default: arrival statuses are refused days ahead (DT-09).</summary>
+    private async Task<Guid> CreateBookedAppointment(TimeSpan? startIn = null)
     {
         var (patientId, providerId, typeId) = await SeedBookingPrerequisites();
+        var start = DateTime.UtcNow + (startIn ?? TimeSpan.FromHours(2));
 
         var response = await _admin.PostAsJsonAsync("/api/v1/appointments", new
         {
             patientId,
             providerId,
             appointmentTypeId = typeId,
-            startAt = DateTime.UtcNow.AddDays(7).ToString("o"),
-            endAt = DateTime.UtcNow.AddDays(7).AddHours(1).ToString("o"),
+            startAt = start.ToString("o"),
+            endAt = start.AddHours(1).ToString("o"),
             chiefComplaint = "Checkup",
             source = "Staff"
         });

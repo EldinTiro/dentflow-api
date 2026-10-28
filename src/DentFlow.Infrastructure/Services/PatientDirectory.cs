@@ -17,6 +17,9 @@ internal sealed class PatientDirectory(ApplicationDbContext db) : IPatientDirect
             .ToDictionaryAsync(p => p.Id, p => p.FirstName + " " + p.LastName, ct);
     }
 
+    public Task<bool> ExistsAsync(Guid patientId, CancellationToken ct) =>
+        db.Set<Patient>().AnyAsync(p => p.Id == patientId, ct);
+
     public Task<bool> IsInactiveAsync(Guid patientId, CancellationToken ct) =>
         db.Set<Patient>().AnyAsync(p => p.Id == patientId && p.Status == PatientStatus.Inactive, ct);
 }

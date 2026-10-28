@@ -23,8 +23,10 @@ public class FinanceReportsApiTests(DentFlowAppFactory factory)
     private record Debtor(Guid PatientId, string PatientName, string PatientNumber, decimal Balance,
         decimal OverdueBalance, int OpenInvoices, DateTime OldestOpenIssuedAt);
 
-    private static readonly DateTime Day1 = new(2025, 3, 10, 9, 0, 0, DateTimeKind.Utc);
-    private static readonly DateTime Day2 = new(2025, 3, 11, 9, 0, 0, DateTimeKind.Utc);
+    // Yesterday and today: a payment can't be dated before its invoice (DT-11), and the
+    // invoices here are issued now. Yesterday is within the one day of slack allowed.
+    private static readonly DateTime Day1 = DateTime.UtcNow.Date.AddDays(-1).AddHours(9);
+    private static readonly DateTime Day2 = DateTime.UtcNow.AddMinutes(-1);
 
     private async Task<(Guid TenantId, string Slug, HttpClient Owner)> NewClinicAsync()
     {

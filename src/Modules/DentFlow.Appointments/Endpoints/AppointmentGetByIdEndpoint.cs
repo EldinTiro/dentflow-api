@@ -11,7 +11,7 @@ public class AppointmentGetByIdEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Get("/appointments/{id}");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Get an appointment by ID");
     }

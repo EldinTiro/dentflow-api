@@ -1,6 +1,7 @@
 using ErrorOr;
 using MediatR;
+using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Patients.Application.Queries;
 
-public record ListPatientDocumentsQuery(Guid PatientId) : IRequest<ErrorOr<IReadOnlyList<PatientDocumentResponse>>>;
+public record ListPatientDocumentsQuery(Guid PatientId) : IPatientScoped, IRequest<ErrorOr<IReadOnlyList<PatientDocumentResponse>>>;

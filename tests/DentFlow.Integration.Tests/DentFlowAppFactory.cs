@@ -182,6 +182,18 @@ public class DentFlowAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return client;
     }
 
+    /// <summary>
+    /// The SuperAdmin as production issues it: no <c>tid</c> claim and no clinic subdomain,
+    /// so no tenant is resolved (SuperAdmin accounts have no TenantId).
+    /// </summary>
+    public HttpClient CreatePlatformAdminClient()
+    {
+        var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("http://localhost") });
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", CreateToken(["SuperAdmin"], "", null, includeTenant: false));
+        return client;
+    }
+
     public HttpClient CreateAdminClient(string? tenantSlug = null) =>
         CreateAuthenticatedClient(["ClinicOwner"], tenantSlug);
 
@@ -191,7 +203,7 @@ public class DentFlowAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public HttpClient CreateDentistClient(string? tenantSlug = null) =>
         CreateAuthenticatedClient(["Dentist"], tenantSlug);
 
-    private static string CreateToken(string[] roles, string tenantSlug, Guid? tenantId = null)
+    private static string CreateToken(string[] roles, string tenantSlug, Guid? tenantId = null, bool includeTenant = true)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestJwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -202,8 +214,8 @@ public class DentFlowAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             new("sub", Guid.NewGuid().ToString()),
             new("jti", Guid.NewGuid().ToString()),
-            new("tenant", tenantSlug),
         };
+        if (includeTenant) claims.Add(new Claim("tenant", tenantSlug));
         // Production tokens carry the tenant id as "tid"; the claim strategy reads it.
         if (tenantId.HasValue) claims.Add(new Claim("tid", tenantId.Value.ToString()));
         claims.AddRange(roles.Select(r => new Claim("role", r)));

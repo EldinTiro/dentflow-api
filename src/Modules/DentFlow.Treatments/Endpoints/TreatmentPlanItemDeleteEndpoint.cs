@@ -10,7 +10,7 @@ public class TreatmentPlanItemDeleteEndpoint(ISender sender) : EndpointWithoutRe
     public override void Configure()
     {
         Delete("/treatment-plans/{planId}/items/{itemId}");
-        Roles("ClinicOwner", "Dentist", "DentalNurse", "SuperAdmin");
+        Roles("ClinicOwner", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Remove an item from a treatment plan");
     }

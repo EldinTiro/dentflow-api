@@ -6,6 +6,8 @@ public interface IAppointmentRepository
 {
     Task<Appointment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> HasProviderConflictAsync(Guid providerId, DateTime startAt, DateTime endAt, Guid? excludeAppointmentId, CancellationToken cancellationToken = default);
+    /// <summary>DT-08: the patient already has an open appointment overlapping this time.</summary>
+    Task<bool> HasPatientConflictAsync(Guid patientId, DateTime startAt, DateTime endAt, Guid? excludeAppointmentId, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<Appointment> Items, int Total)> ListAsync(
         Guid? patientId,
         Guid? providerId,
