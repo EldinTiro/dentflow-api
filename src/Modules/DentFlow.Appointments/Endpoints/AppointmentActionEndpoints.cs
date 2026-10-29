@@ -12,7 +12,8 @@ public class AppointmentRescheduleEndpoint(ISender sender) : Endpoint<Reschedule
     public override void Configure()
     {
         Put("/appointments/{id}/reschedule");
-        Roles("ClinicOwner", "Receptionist", "DentalNurse");
+        // Same roles as booking: a dentist who may book may also move the visit
+        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
         Version(1);
         Summary(s => s.Summary = "Reschedule an appointment to a new time slot");
     }
@@ -20,7 +21,7 @@ public class AppointmentRescheduleEndpoint(ISender sender) : Endpoint<Reschedule
     public override async Task HandleAsync(RescheduleAppointmentRequest req, CancellationToken ct)
     {
         var id = Route<Guid>("id");
-        var result = await sender.Send(new RescheduleAppointmentCommand(id, req.NewStartAt, req.NewEndAt), ct);
+        var result = await sender.Send(new RescheduleAppointmentCommand(id, req.NewStartAt, req.NewEndAt, req.NewProviderId), ct);
         if (result.IsError)
         {
             await this.SendResultErrorsAsync(result.Errors, ct);
@@ -30,7 +31,8 @@ public class AppointmentRescheduleEndpoint(ISender sender) : Endpoint<Reschedule
     }
 }
 
-public record RescheduleAppointmentRequest(DateTime NewStartAt, DateTime NewEndAt);
+/// <param name="NewProviderId">Optional: hand the visit to another doctor (day view drag and drop).</param>
+public record RescheduleAppointmentRequest(DateTime NewStartAt, DateTime NewEndAt, Guid? NewProviderId = null);
 
 public class AppointmentCancelEndpoint(ISender sender) : Endpoint<CancelAppointmentRequest, AppointmentResponse>
 {

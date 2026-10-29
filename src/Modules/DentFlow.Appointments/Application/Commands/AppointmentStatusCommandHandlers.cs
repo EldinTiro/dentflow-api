@@ -8,7 +8,8 @@ namespace DentFlow.Appointments.Application.Commands;
 
 public class RescheduleAppointmentCommandHandler(
     IAppointmentRepository repo,
-    IProviderBlockedTimeChecker blockedTimeChecker)
+    IProviderBlockedTimeChecker blockedTimeChecker,
+    IStaffDirectory staff)
     : IRequestHandler<RescheduleAppointmentCommand, ErrorOr<AppointmentResponse>>
 {
     public async Task<ErrorOr<AppointmentResponse>> Handle(
@@ -27,13 +28,26 @@ public class RescheduleAppointmentCommandHandler(
         if (!AppointmentStatus.CanReschedule(appointment.Status))
             return AppointmentErrors.CannotReschedule;
 
+        // Dragged to another doctor's column: they get the same checks as at booking (DT-01/02, DT-08)
+        var providerId = command.NewProviderId ?? appointment.ProviderId;
+        if (providerId != appointment.ProviderId)
+        {
+            var provider = await staff.GetBookabilityAsync(providerId, cancellationToken);
+            if (provider is null)
+                return AppointmentErrors.ProviderNotFound;
+            if (!provider.IsActive)
+                return AppointmentErrors.ProviderInactive;
+            if (!provider.IsBookable)
+                return AppointmentErrors.ProviderNotBookable;
+        }
+
         var isBlocked = await blockedTimeChecker.IsProviderBlockedAsync(
-            appointment.ProviderId, command.NewStartAt, command.NewEndAt, cancellationToken);
+            providerId, command.NewStartAt, command.NewEndAt, cancellationToken);
         if (isBlocked)
             return AppointmentErrors.ProviderUnavailable;
 
         var hasConflict = await repo.HasProviderConflictAsync(
-            appointment.ProviderId, command.NewStartAt, command.NewEndAt, command.Id, cancellationToken);
+            providerId, command.NewStartAt, command.NewEndAt, command.Id, cancellationToken);
         if (hasConflict)
             return AppointmentErrors.ProviderConflict;
 
@@ -41,7 +55,7 @@ public class RescheduleAppointmentCommandHandler(
                 appointment.PatientId, command.NewStartAt, command.NewEndAt, command.Id, cancellationToken))
             return AppointmentErrors.PatientConflict;
 
-        appointment.Reschedule(command.NewStartAt, command.NewEndAt);
+        appointment.Reschedule(command.NewStartAt, command.NewEndAt, providerId);
         await repo.UpdateAsync(appointment, cancellationToken);
 
         return AppointmentResponse.FromEntity(appointment);
