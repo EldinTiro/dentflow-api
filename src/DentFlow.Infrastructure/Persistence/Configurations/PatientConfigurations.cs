@@ -64,6 +64,23 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
     }
 }
 
+public class ToothFindingConfiguration : IEntityTypeConfiguration<ToothFinding>
+{
+    public void Configure(EntityTypeBuilder<ToothFinding> builder)
+    {
+        builder.ToTable("tooth_findings");
+        builder.HasKey(f => f.Id);
+        builder.Property(f => f.Condition).HasMaxLength(20).IsRequired();
+        builder.Property(f => f.Surfaces).HasMaxLength(5);
+        builder.Property(f => f.Notes).HasMaxLength(500);
+        builder.HasIndex(f => new { f.TenantId, f.PatientId });
+        builder.HasOne<Patient>()
+            .WithMany()
+            .HasForeignKey(f => f.PatientId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class AllergyConfiguration : IEntityTypeConfiguration<Allergy>
 {
     public void Configure(EntityTypeBuilder<Allergy> builder)

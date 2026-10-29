@@ -33,6 +33,7 @@ public class ApplicationDbContext(
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<PatientEmergencyContact> PatientEmergencyContacts => Set<PatientEmergencyContact>();
     public DbSet<Allergy> Allergies => Set<Allergy>();
+    public DbSet<ToothFinding> ToothFindings => Set<ToothFinding>();
     public DbSet<MedicalHistory> MedicalHistories => Set<MedicalHistory>();
     public DbSet<PatientDocument> PatientDocuments => Set<PatientDocument>();
 

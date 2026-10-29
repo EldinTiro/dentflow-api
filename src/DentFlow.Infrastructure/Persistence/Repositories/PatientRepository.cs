@@ -152,6 +152,29 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
         await dbContext.SaveChangesAsync(ct);
     }
 
+    public async Task<IReadOnlyList<ToothFinding>> ListToothFindingsAsync(Guid patientId, CancellationToken ct = default) =>
+        await dbContext.ToothFindings
+            .Where(f => f.PatientId == patientId)
+            .OrderBy(f => f.Tooth).ThenBy(f => f.RecordedAt)
+            .ToListAsync(ct);
+
+    public async Task AddToothFindingAsync(ToothFinding finding, CancellationToken ct = default)
+    {
+        dbContext.ToothFindings.Add(finding);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<ToothFinding?> GetToothFindingAsync(Guid patientId, Guid findingId, CancellationToken ct = default) =>
+        await dbContext.ToothFindings
+            .FirstOrDefaultAsync(f => f.Id == findingId && f.PatientId == patientId, ct);
+
+    public async Task DeleteToothFindingAsync(ToothFinding finding, CancellationToken ct = default)
+    {
+        // Soft delete: clinical data stays recoverable (people-merge plan D13).
+        finding.SoftDelete();
+        await dbContext.SaveChangesAsync(ct);
+    }
+
     public async Task<IReadOnlyList<Allergy>> ListAllergiesAsync(Guid patientId, CancellationToken ct = default) =>
         await dbContext.Allergies
             .Where(a => a.PatientId == patientId)
