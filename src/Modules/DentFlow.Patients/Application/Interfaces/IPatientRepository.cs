@@ -25,6 +25,12 @@ public interface IPatientRepository
     Task<PatientEmergencyContact?> GetEmergencyContactAsync(Guid patientId, Guid contactId, CancellationToken ct = default);
     Task DeleteEmergencyContactAsync(PatientEmergencyContact contact, CancellationToken ct = default);
 
+    // Tooth chart
+    Task<IReadOnlyList<ToothFinding>> ListToothFindingsAsync(Guid patientId, CancellationToken ct = default);
+    Task AddToothFindingAsync(ToothFinding finding, CancellationToken ct = default);
+    Task<ToothFinding?> GetToothFindingAsync(Guid patientId, Guid findingId, CancellationToken ct = default);
+    Task DeleteToothFindingAsync(ToothFinding finding, CancellationToken ct = default);
+
     // Allergies
     Task<IReadOnlyList<Allergy>> ListAllergiesAsync(Guid patientId, CancellationToken ct = default);
     Task<Allergy> AddAllergyAsync(Allergy allergy, CancellationToken ct = default);

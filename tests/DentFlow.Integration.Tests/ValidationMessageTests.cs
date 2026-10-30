@@ -33,7 +33,8 @@ public class ValidationMessageTests(DentFlowAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var reasons = await ReasonsAsync(response);
-        reasons.Should().ContainSingle().Which.Should().Be("Tooth number must be between 1 and 32.");
+        // FDI since the tooth chart (was "between 1 and 32", US numbering)
+        reasons.Should().ContainSingle().Which.Should().Be("Use an FDI tooth number: 11–18, 21–28, 31–38 or 41–48.");
     }
 
     [Fact]

@@ -97,8 +97,11 @@ public class Appointment : TenantAuditableEntity
         SetUpdated();
     }
 
-    public void Reschedule(DateTime newStartAt, DateTime newEndAt)
+    /// <summary>Moves the visit; <paramref name="newProviderId"/> also hands it to another doctor.</summary>
+    public void Reschedule(DateTime newStartAt, DateTime newEndAt, Guid? newProviderId = null)
     {
+        if (newProviderId.HasValue)
+            ProviderId = newProviderId.Value;
         StartAt = newStartAt;
         EndAt = newEndAt;
         DurationMinutes = (int)(newEndAt - newStartAt).TotalMinutes;

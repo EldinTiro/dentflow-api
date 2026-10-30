@@ -6,7 +6,8 @@ namespace DentFlow.Appointments.Application.Commands;
 public record RescheduleAppointmentCommand(
     Guid Id,
     DateTime NewStartAt,
-    DateTime NewEndAt) : IRequest<ErrorOr<AppointmentResponse>>;
+    DateTime NewEndAt,
+    Guid? NewProviderId = null) : IRequest<ErrorOr<AppointmentResponse>>;
 
 public record CancelAppointmentCommand(
     Guid Id,
