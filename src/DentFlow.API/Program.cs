@@ -204,6 +204,7 @@ if (!app.Environment.IsEnvironment("Testing"))
 }
 
 app.UseSerilogRequestLogging();
+app.UseMiddleware<DentFlow.API.Middleware.ValueTooLongMiddleware>();
 app.UseCors();
 app.UseRateLimiter();
 app.UseRequestLocalization();
