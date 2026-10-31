@@ -23,7 +23,8 @@ public class InvoiceRepository(ApplicationDbContext dbContext) : IInvoiceReposit
         DateTime? to,
         int page,
         int pageSize,
-        CancellationToken ct)
+        CancellationToken ct,
+        Guid? appointmentId = null)
     {
         var query = dbContext.Set<Invoice>()
             .Include(i => i.LineItems)
@@ -35,6 +36,9 @@ public class InvoiceRepository(ApplicationDbContext dbContext) : IInvoiceReposit
 
         if (status.HasValue)
             query = query.Where(i => i.Status == status.Value);
+
+        if (appointmentId.HasValue)
+            query = query.Where(i => i.AppointmentId == appointmentId.Value);
 
         if (from.HasValue) query = query.Where(i => i.IssuedAt >= from.Value);
         if (to.HasValue) query = query.Where(i => i.IssuedAt <= to.Value);
@@ -48,6 +52,9 @@ public class InvoiceRepository(ApplicationDbContext dbContext) : IInvoiceReposit
 
         return (items, total);
     }
+
+    public Task<bool> HasActiveInvoiceForAppointmentAsync(Guid appointmentId, CancellationToken ct = default) =>
+        dbContext.Set<Invoice>().AnyAsync(i => i.AppointmentId == appointmentId && i.Status != InvoiceStatus.Void, ct);
 
     public async Task<int> CountByTenantAsync(CancellationToken ct) =>
         await dbContext.Set<Invoice>().CountAsync(ct);

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Billing.Application.Commands;
 using DentFlow.Billing.Application.Interfaces;
 using DentFlow.Billing.Domain;
@@ -14,7 +15,7 @@ public class CreateInvoiceCommandHandlerTests
     private readonly CreateInvoiceCommandHandler _sut;
 
     public CreateInvoiceCommandHandlerTests() =>
-        _sut = new CreateInvoiceCommandHandler(_repo);
+        _sut = new CreateInvoiceCommandHandler(_repo, Substitute.For<IAppointmentReader>());
 
     [Fact]
     public async Task Handle_ValidCommand_CreatesInvoiceAndReturnsResponse()

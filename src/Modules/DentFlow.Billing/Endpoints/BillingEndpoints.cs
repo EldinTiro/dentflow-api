@@ -15,6 +15,8 @@ public class InvoiceCreateRequest
     public DateTime? DueDate { get; init; }
     public string? Notes { get; init; }
     public List<CreateInvoiceLineItemRequest> LineItems { get; init; } = [];
+    /// <summary>The visit being billed; a visit is billed once.</summary>
+    public Guid? AppointmentId { get; init; }
 }
 
 public class InvoiceCreateEndpoint(ISender sender)
@@ -32,7 +34,7 @@ public class InvoiceCreateEndpoint(ISender sender)
     {
         var result = await sender.Send(new CreateInvoiceCommand(
             Route<Guid>("patientId"), req.DueDate, req.Notes,
-            req.LineItems.AsReadOnly()), ct);
+            req.LineItems.AsReadOnly(), req.AppointmentId), ct);
         if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
         await SendCreatedAtAsync<InvoiceGetByIdEndpoint>(new { id = result.Value.Id }, result.Value, cancellation: ct);
     }
@@ -62,7 +64,8 @@ public class InvoiceListEndpoint(ISender sender)
             DateRangeBound.Parse(Query<string?>("from", isRequired: false), endOfDay: false),
             DateRangeBound.Parse(Query<string?>("to", isRequired: false), endOfDay: true),
             page > 0 ? page : 1,
-            pageSize is > 0 and < 101 ? pageSize : 20);
+            pageSize is > 0 and < 101 ? pageSize : 20,
+            Query<Guid?>("appointmentId", isRequired: false));
 
         var result = await sender.Send(query, ct);
         if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
@@ -93,7 +96,8 @@ public class InvoiceListByPatientEndpoint(ISender sender)
             DateRangeBound.Parse(Query<string?>("from", isRequired: false), endOfDay: false),
             DateRangeBound.Parse(Query<string?>("to", isRequired: false), endOfDay: true),
             page > 0 ? page : 1,
-            pageSize is > 0 and < 101 ? pageSize : 20);
+            pageSize is > 0 and < 101 ? pageSize : 20,
+            Query<Guid?>("appointmentId", isRequired: false));
 
         var result = await sender.Send(query, ct);
         if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }

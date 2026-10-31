@@ -4,6 +4,12 @@ namespace DentFlow.Billing.Domain;
 
 public static class BillingErrors
 {
+    public static readonly Error AppointmentNotFound =
+        Error.NotFound("Invoice.AppointmentNotFound", "This patient has no such appointment.");
+
+    public static readonly Error AppointmentAlreadyBilled =
+        Error.Conflict("Invoice.AppointmentAlreadyBilled", "This appointment has already been billed. Void that invoice first to bill it again.");
+
     public static readonly Error InvoiceNotFound =
         Error.NotFound("Invoice.NotFound", "Invoice was not found.");
 

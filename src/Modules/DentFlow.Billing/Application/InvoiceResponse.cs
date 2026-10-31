@@ -45,14 +45,15 @@ public record InvoiceResponse(
     IReadOnlyList<InvoiceLineItemResponse> LineItems,
     IReadOnlyList<InvoicePaymentResponse> Payments,
     DateTime CreatedAt,
-    DateTime? UpdatedAt)
+    DateTime? UpdatedAt,
+    Guid? AppointmentId)
 {
     public static InvoiceResponse FromEntity(Invoice inv) =>
         new(inv.Id, inv.PatientId, inv.InvoiceNumber, inv.Status.ToString(),
             inv.IssuedAt, inv.DueDate, inv.Notes, inv.SubTotal, inv.PaidAmount, inv.BalanceDue,
             inv.LineItems.Select(InvoiceLineItemResponse.FromEntity).ToList().AsReadOnly(),
             inv.Payments.Select(InvoicePaymentResponse.FromEntity).ToList().AsReadOnly(),
-            inv.CreatedAt, inv.UpdatedAt);
+            inv.CreatedAt, inv.UpdatedAt, inv.AppointmentId);
 }
 
 public record InvoiceSummaryResponse(
@@ -68,10 +69,11 @@ public record InvoiceSummaryResponse(
     int LineItemCount,
     DateTime CreatedAt,
     string? PatientName,
-    bool IsOverdue)
+    bool IsOverdue,
+    Guid? AppointmentId)
 {
     public static InvoiceSummaryResponse FromEntity(Invoice inv, string? patientName, DateTime utcNow) =>
         new(inv.Id, inv.PatientId, inv.InvoiceNumber, inv.Status.ToString(),
             inv.IssuedAt, inv.DueDate, inv.SubTotal, inv.PaidAmount, inv.BalanceDue,
-            inv.LineItems.Count, inv.CreatedAt, patientName, inv.IsOverdueAt(utcNow));
+            inv.LineItems.Count, inv.CreatedAt, patientName, inv.IsOverdueAt(utcNow), inv.AppointmentId);
 }

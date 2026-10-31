@@ -17,4 +17,7 @@ internal sealed class AppointmentReader(ApplicationDbContext db) : IAppointmentR
 
     public Task<bool> ProviderHasAnyAsync(Guid providerId, CancellationToken ct) =>
         db.Appointments.AnyAsync(a => a.ProviderId == providerId, ct);
+
+    public Task<Guid?> GetPatientIdAsync(Guid appointmentId, CancellationToken ct) =>
+        db.Appointments.Where(a => a.Id == appointmentId).Select(a => (Guid?)a.PatientId).FirstOrDefaultAsync(ct);
 }

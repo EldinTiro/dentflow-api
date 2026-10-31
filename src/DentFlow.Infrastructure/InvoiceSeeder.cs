@@ -88,7 +88,7 @@ public static class InvoiceSeeder
 
                 // Issued now (Invoice.Create), so due 30 days from now — not before the issue date.
                 var dueDate = DateTime.UtcNow.AddDays(30);
-                var invoice = Invoice.Create(appt.PatientId, invoiceNumber, dueDate, null);
+                var invoice = Invoice.Create(appt.PatientId, invoiceNumber, dueDate, null, appt.Id);
                 invoice.SetTenant(tenantId);
 
                 // Add 1-3 line items

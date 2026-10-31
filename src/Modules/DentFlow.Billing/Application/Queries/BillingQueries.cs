@@ -30,7 +30,8 @@ public record ListInvoicesQuery(
     DateTime? From, // UTC, inclusive
     DateTime? To,   // UTC, inclusive
     int Page = 1,
-    int PageSize = 20)
+    int PageSize = 20,
+    Guid? AppointmentId = null)
     : IRequest<ErrorOr<PagedResult<InvoiceSummaryResponse>>>;
 
 public class ListInvoicesQueryHandler(IInvoiceRepository repo, IPatientDirectory patients)
@@ -46,7 +47,7 @@ public class ListInvoicesQueryHandler(IInvoiceRepository repo, IPatientDirectory
 
         var (items, total) = await repo.ListAsync(
             query.PatientId, statusFilter, query.From, query.To,
-            query.Page, query.PageSize, ct);
+            query.Page, query.PageSize, ct, query.AppointmentId);
 
         // The list could not tell invoices apart without opening them (QA-025).
         var names = await patients.GetNamesAsync(items.Select(i => i.PatientId), ct);

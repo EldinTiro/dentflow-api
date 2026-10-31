@@ -13,7 +13,10 @@ public interface IInvoiceRepository
         DateTime? to,
         int page,
         int pageSize,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        Guid? appointmentId = null);
+    /// <summary>Whether a non-void invoice already bills this appointment.</summary>
+    Task<bool> HasActiveInvoiceForAppointmentAsync(Guid appointmentId, CancellationToken ct = default);
     Task<int> CountByTenantAsync(CancellationToken ct = default);
     Task AddAsync(Invoice invoice, CancellationToken ct = default);
     Task UpdateAsync(Invoice invoice, CancellationToken ct = default);
