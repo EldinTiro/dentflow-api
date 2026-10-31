@@ -1,3 +1,4 @@
+﻿using DentFlow.Domain.Clinical;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
@@ -16,6 +17,9 @@ namespace DentFlow.Billing.Application.Commands;
 /// </summary>
 public static class MoneyRules
 {
+    /// <summary>QA pass 2026-10-31 (N-09): a bill names the same tooth as the plan and the chart.</summary>
+    public const string FdiMessage = "Use an FDI tooth number: 11–18, 21–28, 31–38 or 41–48.";
+
     public const decimal MaxUnitFee = 100_000m;
     public const int MaxQuantity = 100;
 
@@ -86,6 +90,9 @@ public class CreateInvoiceCommandValidator : AbstractValidator<CreateInvoiceComm
         RuleForEach(x => x.LineItems).ChildRules(item =>
         {
             item.RuleFor(i => i.Description).NotEmpty().MaximumLength(500);
+            item.RuleFor(i => i.ToothNumber)
+                .Must(t => Fdi.IsPermanentTooth(t!.Value)).WithMessage(MoneyRules.FdiMessage)
+                .When(i => i.ToothNumber.HasValue);
             item.RuleFor(i => i.Quantity).InclusiveBetween(1, MoneyRules.MaxQuantity);
             item.RuleFor(i => i.UnitFee).InclusiveBetween(0, MoneyRules.MaxUnitFee)
                 .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
@@ -162,6 +169,9 @@ public class AddLineItemCommandValidator : AbstractValidator<AddLineItemCommand>
     {
         RuleFor(x => x.InvoiceId).NotEmpty();
         RuleFor(x => x.Description).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.ToothNumber)
+            .Must(t => Fdi.IsPermanentTooth(t!.Value)).WithMessage(MoneyRules.FdiMessage)
+            .When(x => x.ToothNumber.HasValue);
         RuleFor(x => x.Quantity).InclusiveBetween(1, MoneyRules.MaxQuantity);
         RuleFor(x => x.UnitFee).InclusiveBetween(0, MoneyRules.MaxUnitFee)
             .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
@@ -206,6 +216,9 @@ public class UpdateLineItemCommandValidator : AbstractValidator<UpdateLineItemCo
         RuleFor(x => x.InvoiceId).NotEmpty();
         RuleFor(x => x.LineItemId).NotEmpty();
         RuleFor(x => x.Description).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.ToothNumber)
+            .Must(t => Fdi.IsPermanentTooth(t!.Value)).WithMessage(MoneyRules.FdiMessage)
+            .When(x => x.ToothNumber.HasValue);
         RuleFor(x => x.Quantity).InclusiveBetween(1, MoneyRules.MaxQuantity);
         RuleFor(x => x.UnitFee).InclusiveBetween(0, MoneyRules.MaxUnitFee)
             .Must(MoneyRules.IsWholeCents).WithMessage("Amounts are in whole cents.");
