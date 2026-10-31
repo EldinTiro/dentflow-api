@@ -40,6 +40,9 @@ public static class AppointmentErrors
     public static readonly Error AppointmentTypeNotFound =
         Error.NotFound("AppointmentType.NotFound", "Appointment type was not found.");
 
+    public static readonly Error AppointmentTypeDuplicateName =
+        Error.Conflict("AppointmentType.DuplicateName", "The clinic already has a service with this name.");
+
     public static readonly Error ProviderUnavailable =
         Error.Conflict("Appointment.ProviderUnavailable", "This provider has a scheduled leave or block during the selected time. Please choose a different date or another provider.");
 

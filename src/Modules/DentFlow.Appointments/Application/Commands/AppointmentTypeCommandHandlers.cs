@@ -12,6 +12,10 @@ public class CreateAppointmentTypeCommandHandler(IAppointmentTypeRepository repo
         CreateAppointmentTypeCommand command,
         CancellationToken cancellationToken)
     {
+        // N-11: the unique index answered a duplicate with a 500
+        if (await repository.NameExistsAsync(command.Name, null, cancellationToken))
+            return AppointmentErrors.AppointmentTypeDuplicateName;
+
         var type = AppointmentType.Create(
             command.Name,
             command.DefaultDurationMinutes,
@@ -36,6 +40,9 @@ public class UpdateAppointmentTypeCommandHandler(IAppointmentTypeRepository repo
         var type = await repository.GetByIdAsync(command.Id, cancellationToken);
         if (type is null)
             return AppointmentErrors.AppointmentTypeNotFound;
+
+        if (await repository.NameExistsAsync(command.Name, type.Id, cancellationToken))
+            return AppointmentErrors.AppointmentTypeDuplicateName;
 
         type.Update(
             command.Name,

@@ -29,6 +29,8 @@ public interface IAppointmentTypeRepository
 {
     Task<AppointmentType?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AppointmentType>> ListAsync(CancellationToken cancellationToken = default);
+    /// <summary>Whether another live type of this clinic already has the name (ignoring case).</summary>
+    Task<bool> NameExistsAsync(string name, Guid? excludeId, CancellationToken cancellationToken = default);
     Task AddAsync(AppointmentType appointmentType, CancellationToken cancellationToken = default);
     Task UpdateAsync(AppointmentType appointmentType, CancellationToken cancellationToken = default);
     Task SoftDeleteAsync(AppointmentType appointmentType, CancellationToken cancellationToken = default);

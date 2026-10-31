@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace DentFlow.Appointments.Application.Commands;
 
@@ -12,6 +12,10 @@ public class CreateAppointmentTypeCommandValidator : AbstractValidator<CreateApp
             .Matches(@"^#[0-9A-Fa-f]{6}$")
             .WithMessage("ColorHex must be a valid hex colour (e.g. #3B82F6).")
             .When(x => x.ColorHex is not null);
+        RuleFor(x => x.DefaultFee)
+            .InclusiveBetween(0m, 100_000m)
+            .WithMessage("The default fee must be between 0 and 100,000.")
+            .When(x => x.DefaultFee.HasValue);
     }
 }
 
@@ -26,5 +30,9 @@ public class UpdateAppointmentTypeCommandValidator : AbstractValidator<UpdateApp
             .Matches(@"^#[0-9A-Fa-f]{6}$")
             .WithMessage("ColorHex must be a valid hex colour (e.g. #3B82F6).")
             .When(x => x.ColorHex is not null);
+        RuleFor(x => x.DefaultFee)
+            .InclusiveBetween(0m, 100_000m)
+            .WithMessage("The default fee must be between 0 and 100,000.")
+            .When(x => x.DefaultFee.HasValue);
     }
 }
