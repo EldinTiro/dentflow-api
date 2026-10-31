@@ -131,8 +131,22 @@ public class StaffMember : TenantAuditableEntity
     /// Can appear in provider lists and be booked (people-merge plan D3). Decided here,
     /// not in the web app: clinical people only, and never while inactive.
     /// </summary>
-    public bool IsBookable =>
-        IsActive && StaffType is StaffType.Dentist or StaffType.Hygienist or StaffType.DentalAssistant;
+    public bool IsBookable => IsActive && IsClinical(StaffType);
+
+    /// <summary>The staff types that treat patients and so can be booked.</summary>
+    public static bool IsClinical(StaffType type) =>
+        type is StaffType.Dentist or StaffType.Hygienist or StaffType.DentalAssistant;
+
+    /// <summary>
+    /// What this person does. Independent of their sign-in role: an owner can be a dentist too
+    /// (the role decides permissions, the type decides who can be booked).
+    /// </summary>
+    public void ChangeType(StaffType type)
+    {
+        if (StaffType == type) return;
+        StaffType = type;
+        SetUpdated();
+    }
 
     /// <summary>
     /// Ties a sign-in account to this profile. The profile's email is the login email (D1),

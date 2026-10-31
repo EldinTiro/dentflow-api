@@ -1,5 +1,6 @@
 ﻿using ErrorOr;
 using MediatR;
+using DentFlow.Staff.Domain;
 
 namespace DentFlow.Staff.Application.Commands;
 
@@ -17,5 +18,6 @@ public record UpdateStaffMemberCommand(
     string? NpiNumber,
     string? Address,
     string? City,
-    string? PostalCode) : IRequest<ErrorOr<StaffMemberResponse>>;
+    string? PostalCode,
+    StaffType? StaffType = null) : IRequest<ErrorOr<StaffMemberResponse>>;
 

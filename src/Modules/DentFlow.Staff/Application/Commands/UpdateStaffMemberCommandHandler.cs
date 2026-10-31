@@ -9,7 +9,8 @@ namespace DentFlow.Staff.Application.Commands;
 public class UpdateStaffMemberCommandHandler(
     IStaffRepository staffRepository,
     IUserAccountLifecycle accounts,
-    ITransactionRunner transaction)
+    ITransactionRunner transaction,
+    IAppointmentReader appointments)
     : IRequestHandler<UpdateStaffMemberCommand, ErrorOr<StaffMemberResponse>>
 {
     public async Task<ErrorOr<StaffMemberResponse>> Handle(
@@ -24,6 +25,13 @@ public class UpdateStaffMemberCommandHandler(
         if (staffMember.UserId is not null &&
             !string.Equals(staffMember.Email, command.Email, StringComparison.OrdinalIgnoreCase))
             return StaffErrors.EmailLockedByAccess;
+
+        // No longer bookable: visits ahead would be left without someone who can take them
+        if (command.StaffType is { } newType && staffMember.IsBookable && !StaffMember.IsClinical(newType))
+        {
+            var upcoming = await appointments.CountUpcomingForProviderAsync(staffMember.Id, DateTime.UtcNow, cancellationToken);
+            if (upcoming > 0) return StaffErrors.HasUpcomingAppointments(upcoming);
+        }
 
         return await transaction.ExecuteAsync<StaffMemberResponse>(async ct =>
         {
@@ -41,6 +49,8 @@ public class UpdateStaffMemberCommandHandler(
                 command.Address,
                 command.City,
                 command.PostalCode);
+            if (command.StaffType is { } type)
+                staffMember.ChangeType(type);
 
             // One name for profile and account (D6).
             if (staffMember.UserId is { } userId)
