@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using DentFlow.Billing.Application.Interfaces;
 using DentFlow.Billing.Domain;
+using DentFlow.Application.Common.Interfaces;
 using DentFlow.Application.Common.Requests;
 
 namespace DentFlow.Billing.Application.Commands;
@@ -35,18 +36,28 @@ public record CreateInvoiceCommand(
     Guid PatientId,
     DateTime? DueDate,
     string? Notes,
-    IReadOnlyList<CreateInvoiceLineItemRequest> LineItems)
+    IReadOnlyList<CreateInvoiceLineItemRequest> LineItems,
+    Guid? AppointmentId = null)
     : IPatientScoped, IRequest<ErrorOr<InvoiceResponse>>;
 
-public class CreateInvoiceCommandHandler(IInvoiceRepository repo)
+public class CreateInvoiceCommandHandler(IInvoiceRepository repo, IAppointmentReader appointments)
     : IRequestHandler<CreateInvoiceCommand, ErrorOr<InvoiceResponse>>
 {
     public async Task<ErrorOr<InvoiceResponse>> Handle(CreateInvoiceCommand cmd, CancellationToken ct)
     {
+        if (cmd.AppointmentId is { } appointmentId)
+        {
+            // The visit must be this patient's (in this clinic), and billed only once (user report)
+            if (await appointments.GetPatientIdAsync(appointmentId, ct) != cmd.PatientId)
+                return BillingErrors.AppointmentNotFound;
+            if (await repo.HasActiveInvoiceForAppointmentAsync(appointmentId, ct))
+                return BillingErrors.AppointmentAlreadyBilled;
+        }
+
         var count = await repo.CountByTenantAsync(ct);
         var invoiceNumber = $"INV-{DateTime.UtcNow:yyyyMMdd}-{(count + 1):D4}";
 
-        var invoice = Invoice.Create(cmd.PatientId, invoiceNumber, cmd.DueDate, cmd.Notes);
+        var invoice = Invoice.Create(cmd.PatientId, invoiceNumber, cmd.DueDate, cmd.Notes, cmd.AppointmentId);
         await repo.AddAsync(invoice, ct);
 
         foreach (var li in cmd.LineItems)

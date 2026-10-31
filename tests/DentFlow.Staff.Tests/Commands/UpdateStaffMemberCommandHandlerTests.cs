@@ -18,7 +18,7 @@ public class UpdateStaffMemberCommandHandlerTests
 
     public UpdateStaffMemberCommandHandlerTests()
     {
-        _sut = new UpdateStaffMemberCommandHandler(_repo, _accounts, new PassThroughTransactionRunner());
+        _sut = new UpdateStaffMemberCommandHandler(_repo, _accounts, new PassThroughTransactionRunner(), Substitute.For<IAppointmentReader>());
         _accounts.RenameAsync(default, default!, default!, default).ReturnsForAnyArgs(Result.Success);
     }
 

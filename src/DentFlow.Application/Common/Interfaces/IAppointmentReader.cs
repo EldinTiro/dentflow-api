@@ -17,4 +17,7 @@ public interface IAppointmentReader
 
     /// <summary>Whether the provider has any appointment at all, in any status (D12).</summary>
     Task<bool> ProviderHasAnyAsync(Guid providerId, CancellationToken ct);
+
+    /// <summary>Whose appointment this is, or null when the clinic has no such appointment.</summary>
+    Task<Guid?> GetPatientIdAsync(Guid appointmentId, CancellationToken ct);
 }

@@ -9,6 +9,8 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
     public void Configure(EntityTypeBuilder<Invoice> builder)
     {
         builder.ToTable("invoices");
+        // "Is this visit billed?" is asked for every appointment opened
+        builder.HasIndex(i => new { i.TenantId, i.AppointmentId });
 
         builder.HasKey(i => i.Id);
 

@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DentFlow.Staff.Domain;
 using DentFlow.Staff.Application;
 using DentFlow.Staff.Application.Commands;
 using DentFlow.Application.Common.Http;
@@ -23,7 +24,7 @@ public class StaffUpdateEndpoint(ISender sender) : Endpoint<UpdateStaffMemberReq
         var command = new UpdateStaffMemberCommand(
             id, req.FirstName, req.LastName, req.Email, req.Phone, req.Specialty,
             req.ColorHex, req.Biography, req.LicenseNumber, req.LicenseExpiry, req.NpiNumber,
-            req.Address, req.City, req.PostalCode);
+            req.Address, req.City, req.PostalCode, req.StaffType);
 
         var result = await sender.Send(command, ct);
         if (result.IsError) { await this.SendResultErrorsAsync(result.Errors, ct); return; }
@@ -35,4 +36,6 @@ public record UpdateStaffMemberRequest(
     string FirstName, string LastName, string? Email, string? Phone,
     string? Specialty, string? ColorHex, string? Biography,
     string? LicenseNumber, DateOnly? LicenseExpiry, string? NpiNumber,
-    string? Address, string? City, string? PostalCode);
+    string? Address, string? City, string? PostalCode,
+    // Optional: what the person does (an owner who also treats patients is a Dentist)
+    StaffType? StaffType = null);

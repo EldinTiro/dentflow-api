@@ -11,6 +11,8 @@ public class Invoice : TenantAuditableEntity
     public DateTime IssuedAt { get; private set; }
     public DateTime? DueDate { get; private set; }
     public string? Notes { get; private set; }
+    /// <summary>The visit this invoice bills, when it was issued from one. A visit is billed once.</summary>
+    public Guid? AppointmentId { get; private set; }
 
     private readonly List<InvoiceLineItem> _lineItems = [];
     public IReadOnlyList<InvoiceLineItem> LineItems => _lineItems.AsReadOnly();
@@ -31,10 +33,11 @@ public class Invoice : TenantAuditableEntity
 
     private Invoice() { }
 
-    public static Invoice Create(Guid patientId, string invoiceNumber, DateTime? dueDate, string? notes) =>
+    public static Invoice Create(Guid patientId, string invoiceNumber, DateTime? dueDate, string? notes, Guid? appointmentId = null) =>
         new Invoice
         {
             PatientId = patientId,
+            AppointmentId = appointmentId,
             InvoiceNumber = invoiceNumber,
             Status = InvoiceStatus.Draft,
             IssuedAt = DateTime.UtcNow,
