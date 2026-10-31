@@ -104,6 +104,13 @@ public class AppointmentTypeRepository(ApplicationDbContext dbContext) : IAppoin
     public async Task<IReadOnlyList<AppointmentType>> ListAsync(CancellationToken cancellationToken = default) =>
         await dbContext.Set<AppointmentType>().OrderBy(t => t.SortOrder).ThenBy(t => t.Name).ToListAsync(cancellationToken);
 
+    public async Task<bool> NameExistsAsync(string name, Guid? excludeId, CancellationToken cancellationToken = default)
+    {
+        var normalized = name.Trim().ToLower();
+        return await dbContext.Set<AppointmentType>()
+            .AnyAsync(t => t.Name.ToLower() == normalized && t.Id != excludeId, cancellationToken);
+    }
+
     public async Task AddAsync(AppointmentType appointmentType, CancellationToken cancellationToken = default)
     {
         await dbContext.Set<AppointmentType>().AddAsync(appointmentType, cancellationToken);
