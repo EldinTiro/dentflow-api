@@ -30,7 +30,56 @@ public class PatientApiTests(DentFlowAppFactory factory)
         var body = await response.Content.ReadFromJsonAsync<PatientDto>();
         body!.FirstName.Should().Be("Ana");
         body.LastName.Should().Be("Perić");
-        body.PatientNumber.Should().StartWith("P-");
+        body.PatientNumber.Should().MatchRegex(@"^\d+$");
+    }
+
+    // Pink Dent imported its paper kartoteka ("3453"); new patients must continue that
+    // series per clinic, and a deleted patient's number is never handed out again.
+    [Fact]
+    public async Task CreatePatient_WithoutNumber_GetsTheClinicsHighestNumberPlusOne()
+    {
+        var clinic = factory.CreateAdminClient($"numbering-{Guid.NewGuid():N}"[..30]);
+        var other = factory.CreateAdminClient($"numbering-{Guid.NewGuid():N}"[..30]);
+
+        async Task<PatientDto> Create(HttpClient client, string? number)
+        {
+            var response = await client.PostAsJsonAsync("/api/v1/patients", new
+            {
+                patientNumber = number, firstName = "Num", lastName = "Bering", smsOptIn = false, emailOptIn = false,
+            });
+            response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+            return (await response.Content.ReadFromJsonAsync<PatientDto>())!;
+        }
+
+        (await Create(clinic, null)).PatientNumber.Should().Be("1");
+        await Create(clinic, "22");
+        var highest = await Create(clinic, "3453");
+        await Create(other, "9000"); // another clinic's numbers don't count
+
+        (await Create(clinic, null)).PatientNumber.Should().Be("3454");
+
+        (await clinic.DeleteAsync($"/api/v1/patients/{highest.Id}")).IsSuccessStatusCode.Should().BeTrue();
+        (await Create(clinic, null)).PatientNumber.Should().Be("3455");
+    }
+
+    // SEC-15: the "number taken" check read every clinic, so card 22 of one clinic blocked
+    // card 22 of another — and with plain numbers every clinic has a 22.
+    [Fact]
+    public async Task CreatePatient_SameNumberInAnotherClinic_IsAllowed_SameClinic_Returns409()
+    {
+        var first = factory.CreateAdminClient($"cardno-{Guid.NewGuid():N}"[..30]);
+        var second = factory.CreateAdminClient($"cardno-{Guid.NewGuid():N}"[..30]);
+        var number = Random.Shared.Next(100_000, 999_999).ToString();
+        object Body() => new { patientNumber = number, firstName = "Card", lastName = "Number", smsOptIn = false, emailOptIn = false };
+
+        (await first.PostAsJsonAsync("/api/v1/patients", Body())).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var otherClinic = await second.PostAsJsonAsync("/api/v1/patients", Body());
+        otherClinic.StatusCode.Should().Be(HttpStatusCode.Created, await otherClinic.Content.ReadAsStringAsync());
+
+        var sameClinic = await first.PostAsJsonAsync("/api/v1/patients", Body());
+        sameClinic.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await sameClinic.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("PatientNumberAlreadyExists");
     }
 
     [Fact]

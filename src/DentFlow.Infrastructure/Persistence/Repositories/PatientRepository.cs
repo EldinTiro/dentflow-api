@@ -16,9 +16,18 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
         return await dbContext.Set<Patient>().FirstOrDefaultAsync(p => p.Email == email, cancellationToken);
     }
 
-    public async Task<Patient?> GetByPatientNumberAsync(string patientNumber, CancellationToken cancellationToken = default) =>
-        await dbContext.Set<Patient>().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(p => p.PatientNumber == patientNumber, cancellationToken);
+    // Soft-deleted rows count (the unique index on tenant + number includes them), so the
+    // soft-delete filter is lifted — which lifts the tenant filter too, hence the explicit
+    // tenant. Without it card 22 of one clinic blocked card 22 of every other (SEC-15).
+    public async Task<Patient?> GetByPatientNumberAsync(string patientNumber, CancellationToken cancellationToken = default)
+    {
+        var tenantId = dbContext.ResolvedTenantId
+            ?? throw new InvalidOperationException(
+                "Cannot check a patient number without a resolved tenant.");
+
+        return await dbContext.Set<Patient>().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.PatientNumber == patientNumber, cancellationToken);
+    }
 
     public async Task<(IReadOnlyList<Patient> Items, int Total)> ListAsync(
         string? searchTerm, PatientStatus? status, string? recallFilter, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -94,19 +103,23 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
 
     public async Task<string> GeneratePatientNumberAsync(CancellationToken cancellationToken = default)
     {
-        // Scoped to the resolved tenant and counting soft-deleted rows too, so a
+        // Scoped to the resolved tenant and reading soft-deleted rows too, so a
         // number is never reused within a clinic. IgnoreQueryFilters applies to the
         // whole query tree, so the tenant has to be supplied explicitly — the previous
         // version compared against an arbitrary row's TenantId and produced duplicates
         // as soon as more than one tenant existed.
+        // Highest + 1, not count + 1: imported kartoteka numbers ("3453") are not a
+        // sequence, so a count would land on a number that is already taken.
         var tenantId = dbContext.ResolvedTenantId
             ?? throw new InvalidOperationException(
                 "Cannot generate a patient number without a resolved tenant.");
 
-        var count = await dbContext.Set<Patient>().IgnoreQueryFilters()
-            .CountAsync(p => p.TenantId == tenantId, cancellationToken);
+        var numbers = await dbContext.Set<Patient>().IgnoreQueryFilters()
+            .Where(p => p.TenantId == tenantId)
+            .Select(p => p.PatientNumber)
+            .ToListAsync(cancellationToken);
 
-        return $"P-{(count + 1):D6}";
+        return Patient.NextNumber(numbers);
     }
 
     public async Task AddAsync(Patient patient, CancellationToken cancellationToken = default)

@@ -49,6 +49,25 @@ public class Patient : TenantAuditableEntity
 
     private Patient() { }
 
+    /// <summary>
+    /// The card number for a new patient: the clinic's highest number + 1, plain numeric like a
+    /// paper kartoteka ("3453"). The old "P-000050" format counts as 50, so a clinic that used
+    /// it carries on from 51. Numbers that are neither ("1963-2") are left out.
+    /// </summary>
+    public static string NextNumber(IEnumerable<string> existingNumbers)
+    {
+        var highest = System.Numerics.BigInteger.Zero;
+        foreach (var raw in existingNumbers)
+        {
+            var number = raw.Trim();
+            if (number.StartsWith("P-", StringComparison.OrdinalIgnoreCase))
+                number = number[2..];
+            if (number.Length > 0 && number.All(char.IsAsciiDigit))
+                highest = System.Numerics.BigInteger.Max(highest, System.Numerics.BigInteger.Parse(number));
+        }
+        return (highest + 1).ToString();
+    }
+
     public static Patient Create(
         string patientNumber,
         string firstName,
