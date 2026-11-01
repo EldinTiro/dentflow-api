@@ -68,15 +68,17 @@ public class StaffMemberAccessTests
     [Theory]
     [InlineData(StaffType.Dentist)]
     [InlineData(StaffType.Hygienist)]
-    [InlineData(StaffType.DentalAssistant)]
-    public void IsBookable_IsTrueForDentistAndClinicalNurseTypes(StaffType type) =>
+    public void IsBookable_IsTrueForTypesThatTreatPatients(StaffType type) =>
         Profile(type: type).IsBookable.Should().BeTrue();
 
+    // User request 2026-11-01: a dental technician ("stomatološki tehničar", DentalAssistant)
+    // does not take appointments, so is not offered when booking or counted per doctor
     [Theory]
+    [InlineData(StaffType.DentalAssistant)]
     [InlineData(StaffType.Receptionist)]
     [InlineData(StaffType.ClinicAdmin)]
     [InlineData(StaffType.OfficeManager)]
-    public void IsBookable_IsFalseForReceptionAndOffice(StaffType type) =>
+    public void IsBookable_IsFalseForTechniciansReceptionAndOffice(StaffType type) =>
         Profile(type: type).IsBookable.Should().BeFalse();
 
     [Fact]
