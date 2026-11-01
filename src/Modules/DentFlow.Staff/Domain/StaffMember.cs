@@ -133,9 +133,12 @@ public class StaffMember : TenantAuditableEntity
     /// </summary>
     public bool IsBookable => IsActive && IsClinical(StaffType);
 
-    /// <summary>The staff types that treat patients and so can be booked.</summary>
+    /// <summary>
+    /// The staff types that treat patients and so can be booked. Not DentalAssistant: in the
+    /// clinics using DentFlow that is the dental technician, who takes no appointments.
+    /// </summary>
     public static bool IsClinical(StaffType type) =>
-        type is StaffType.Dentist or StaffType.Hygienist or StaffType.DentalAssistant;
+        type is StaffType.Dentist or StaffType.Hygienist;
 
     /// <summary>
     /// What this person does. Independent of their sign-in role: an owner can be a dentist too
