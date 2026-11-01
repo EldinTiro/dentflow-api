@@ -18,7 +18,7 @@ public class PatientMedicalSoftDeleteTests(DentFlowAppFactory factory)
 
     private async Task<(HttpClient Client, Guid PatientId)> PatientAsync()
     {
-        var client = factory.CreateAuthenticatedClient([Roles.Receptionist]);
+        var client = factory.CreateAuthenticatedClient([Roles.Staff]);
         var created = await client.PostAsJsonAsync("/api/v1/patients", new
         {
             firstName = "Soft", lastName = "Delete", smsOptIn = false, emailOptIn = false

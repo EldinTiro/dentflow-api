@@ -71,7 +71,7 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
         var owner = await UserAsync(clinic, Roles.ClinicOwner);
         var client = await SignedInAsync(owner, clinic.Slug);
 
-        (await SetRole(client, "", owner, Roles.Receptionist)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await SetRole(client, "", owner, Roles.Staff)).StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
         var client = await SignedInAsync(admin, clinic.Slug);
 
         (await SetActive(client, "/admin", admin, false)).StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await SetRole(client, "/admin", admin, Roles.Receptionist)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await SetRole(client, "/admin", admin, Roles.Staff)).StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -102,9 +102,9 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
     {
         var clinic = await ClinicAsync();
         var owner = await UserAsync(clinic, Roles.ClinicOwner);
-        var receptionist = await SignedInAsync(await UserAsync(clinic, Roles.Receptionist), clinic.Slug);
+        var receptionist = await SignedInAsync(await UserAsync(clinic, Roles.Staff), clinic.Slug);
 
-        (await SetRole(receptionist, "", owner, Roles.Receptionist)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await SetRole(receptionist, "", owner, Roles.Staff)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await SetActive(receptionist, "", owner, false)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
@@ -113,8 +113,8 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
     {
         var clinic = await ClinicAsync();
         await UserAsync(clinic, Roles.ClinicOwner);
-        var receptionist = await UserAsync(clinic, Roles.Receptionist);
-        var dentist = await SignedInAsync(await UserAsync(clinic, Roles.Dentist), clinic.Slug);
+        var receptionist = await UserAsync(clinic, Roles.Staff);
+        var dentist = await SignedInAsync(await UserAsync(clinic, Roles.Staff), clinic.Slug);
 
         (await SetRole(dentist, "", receptionist, Roles.ClinicOwner)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -124,9 +124,9 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
     {
         var clinic = await ClinicAsync();
         var owner = await SignedInAsync(await UserAsync(clinic, Roles.ClinicOwner), clinic.Slug);
-        var receptionist = await UserAsync(clinic, Roles.Receptionist);
+        var receptionist = await UserAsync(clinic, Roles.Staff);
 
-        (await SetRole(owner, "", receptionist, Roles.DentalNurse)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await SetRole(owner, "", receptionist, Roles.Staff)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await SetActive(owner, "", receptionist, false)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
@@ -137,7 +137,7 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
         var owner = await SignedInAsync(await UserAsync(clinic, Roles.ClinicOwner), clinic.Slug);
         var second = await UserAsync(clinic, Roles.ClinicOwner);
 
-        (await SetRole(owner, "", second, Roles.Dentist)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await SetRole(owner, "", second, Roles.Staff)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     // ── Platform role ─────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ public class UserManagementGuardTests(DentFlowAppFactory factory)
     public async Task SuperAdmin_CannotMakeAClinicUserASuperAdmin()
     {
         var clinic = await ClinicAsync();
-        var receptionist = await UserAsync(clinic, Roles.Receptionist);
+        var receptionist = await UserAsync(clinic, Roles.Staff);
         var admin = await SignedInAsync(await UserAsync(null, Roles.SuperAdmin), clinic.Slug);
 
         (await SetRole(admin, "/admin", receptionist, Roles.SuperAdmin)).StatusCode.Should().Be(HttpStatusCode.BadRequest);

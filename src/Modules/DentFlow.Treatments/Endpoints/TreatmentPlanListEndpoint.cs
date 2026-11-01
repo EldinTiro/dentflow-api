@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Treatments.Application;
 using DentFlow.Treatments.Application.Queries;
 using DentFlow.Treatments.Domain;
@@ -13,7 +14,7 @@ public class TreatmentPlanListEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/patients/{patientId}/treatment-plans");
-        Roles("ClinicOwner", "Dentist", "DentalNurse", "Receptionist");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "List treatment plans for a patient");
     }

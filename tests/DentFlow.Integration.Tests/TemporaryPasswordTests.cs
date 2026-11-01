@@ -66,7 +66,7 @@ public class TemporaryPasswordTests(DentFlowAppFactory factory)
     [Fact]
     public async Task InvitedUser_IsToldToChangeThePassword_AndIsBlockedUntilThen()
     {
-        var (client, _, login) = await InvitedUserSignedInAsync(Roles.Receptionist);
+        var (client, _, login) = await InvitedUserSignedInAsync(Roles.Staff);
 
         login.MustChangePassword.Should().BeTrue();
         var blocked = await client.GetAsync("/api/v1/patients");
@@ -81,7 +81,7 @@ public class TemporaryPasswordTests(DentFlowAppFactory factory)
     [Fact]
     public async Task ChangingToTheTemporaryPasswordItself_IsRefused_AndTheChangeIsStillRequired()
     {
-        var (client, invite, _) = await InvitedUserSignedInAsync(Roles.DentalNurse);
+        var (client, invite, _) = await InvitedUserSignedInAsync(Roles.Staff);
 
         var change = await client.PostAsJsonAsync("/api/v1/users/me/change-password",
             new { currentPassword = invite.TempPassword, newPassword = invite.TempPassword });
@@ -94,7 +94,7 @@ public class TemporaryPasswordTests(DentFlowAppFactory factory)
     [Fact]
     public async Task AfterChangingThePassword_TheUserGetsFullAccess()
     {
-        var (client, invite, _) = await InvitedUserSignedInAsync(Roles.DentalNurse);
+        var (client, invite, _) = await InvitedUserSignedInAsync(Roles.Staff);
 
         var change = await client.PostAsJsonAsync("/api/v1/users/me/change-password",
             new { currentPassword = invite.TempPassword, newPassword = NewPassword });
@@ -111,7 +111,7 @@ public class TemporaryPasswordTests(DentFlowAppFactory factory)
     {
         var (slug, _) = await ClinicAsync();
         var userEmail = $"reset-{Guid.NewGuid():N}@test.com";
-        var userId = await factory.SeedUserAsync(userEmail, OwnerPassword, Roles.Dentist,
+        var userId = await factory.SeedUserAsync(userEmail, OwnerPassword, Roles.Staff,
             await factory.SeedTenantAsync(slug, "Temp Clinic"));
         var adminEmail = $"sa-{Guid.NewGuid():N}@test.com";
         await factory.SeedUserAsync(adminEmail, OwnerPassword, Roles.SuperAdmin, null);

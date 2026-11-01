@@ -34,7 +34,7 @@ public class DeactivatedUserSessionTests(DentFlowAppFactory factory)
         var ownerEmail = $"owner-{Guid.NewGuid():N}@sess.test";
         var nurseEmail = $"nurse-{Guid.NewGuid():N}@sess.test";
         await factory.SeedUserAsync(ownerEmail, Password, Roles.ClinicOwner, tenantId);
-        await factory.SeedUserAsync(nurseEmail, Password, Roles.DentalNurse, tenantId);
+        await factory.SeedUserAsync(nurseEmail, Password, Roles.Staff, tenantId);
         var (owner, _) = await SignedInAsync(slug, ownerEmail);
         var (nurse, nurseId) = await SignedInAsync(slug, nurseEmail);
         (await nurse.GetAsync("/api/v1/patients")).StatusCode.Should().Be(HttpStatusCode.OK);

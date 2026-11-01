@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Treatments.Application.Commands;
 using DentFlow.Application.Common.Http;
 
@@ -10,7 +11,7 @@ public class TreatmentPlanItemDeleteEndpoint(ISender sender) : EndpointWithoutRe
     public override void Configure()
     {
         Delete("/treatment-plans/{planId}/items/{itemId}");
-        Roles("ClinicOwner", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Remove an item from a treatment plan");
     }

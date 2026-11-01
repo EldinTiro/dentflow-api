@@ -155,12 +155,12 @@ public class RescheduleApiTests(DentFlowAppFactory factory)
 
     // Bug: a dentist could book and was offered "Reschedule" in the app, but the API answered 403
     [Fact]
-    public async Task Reschedule_AsADentist_IsAllowed()
+    public async Task Reschedule_AsStaff_IsAllowed()
     {
         var eldina = await StaffAsync();
         var id = await BookAsync(eldina, Day(26, 9));
 
-        var r = await MoveAsync(factory.CreateDentistClient(), id, Day(26, 12));
+        var r = await MoveAsync(factory.CreateStaffClient(), id, Day(26, 12));
 
         r.StatusCode.Should().Be(HttpStatusCode.OK, await r.Content.ReadAsStringAsync());
     }

@@ -33,7 +33,7 @@ public class UserRegisterEndpoint(ISender sender)
             req.Password,
             req.FirstName,
             req.LastName,
-            req.Role ?? AppRoles.Receptionist,
+            req.Role ?? AppRoles.Staff,
             req.TenantId);
 
         var result = await sender.Send(command, ct);

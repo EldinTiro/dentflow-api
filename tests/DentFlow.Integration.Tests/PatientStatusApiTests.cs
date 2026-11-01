@@ -13,7 +13,7 @@ public class PatientStatusApiTests(DentFlowAppFactory factory)
     private record IdDto(Guid Id);
     private record PatientDto(Guid Id, string Status, DateTime? DeactivatedAt, string? DeactivationReason);
 
-    public static TheoryData<string> ClinicRoles => [Roles.ClinicOwner, Roles.Dentist, Roles.DentalNurse, Roles.Receptionist];
+    public static TheoryData<string> ClinicRoles => [Roles.ClinicOwner, Roles.Staff, Roles.Staff, Roles.Staff];
 
     private static async Task<Guid> NewPatientAsync(HttpClient client)
     {
@@ -80,7 +80,7 @@ public class PatientStatusApiTests(DentFlowAppFactory factory)
     [Fact]
     public async Task PatientList_DefaultsToActive_AndStatusFiltersStillWork()
     {
-        var client = factory.CreateAuthenticatedClient([Roles.Receptionist]);
+        var client = factory.CreateAuthenticatedClient([Roles.Staff]);
         var marker = $"Zlist{Guid.NewGuid():N}"[..14];
         async Task<Guid> Create()
         {

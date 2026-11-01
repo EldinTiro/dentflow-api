@@ -30,7 +30,7 @@ public class GrantStaffAccessCommandHandlerTests
         return staff;
     }
 
-    private static GrantStaffAccessCommand Command(Guid staffId, string role = Roles.Dentist) => new(staffId, role);
+    private static GrantStaffAccessCommand Command(Guid staffId, string role = Roles.Staff) => new(staffId, role);
 
     private void ProvisioningReturns(ErrorOr<Guid> result) =>
         _provisioning.CreateUserAsync(default!, default!, default!, default!, default!, default, default)
@@ -50,7 +50,7 @@ public class GrantStaffAccessCommandHandlerTests
         result.Value.TempPassword.Should().NotBeNullOrWhiteSpace();
         staff.UserId.Should().Be(userId);
         await _provisioning.Received(1).CreateUserAsync(
-            "ana@clinic.com", result.Value.TempPassword, "Ana", "Babić", Roles.Dentist, TenantId, Arg.Any<CancellationToken>());
+            "ana@clinic.com", result.Value.TempPassword, "Ana", "Babić", Roles.Staff, TenantId, Arg.Any<CancellationToken>());
         await _repo.Received(1).UpdateAsync(staff, Arg.Any<CancellationToken>());
         _transaction.Calls.Should().Be(1);
     }

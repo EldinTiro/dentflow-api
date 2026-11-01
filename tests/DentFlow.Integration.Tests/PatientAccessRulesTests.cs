@@ -14,7 +14,7 @@ public class PatientAccessRulesTests(DentFlowAppFactory factory)
 {
     private record IdDto(Guid Id);
 
-    public static TheoryData<string> ClinicRoles => [Roles.ClinicOwner, Roles.Dentist, Roles.DentalNurse, Roles.Receptionist];
+    public static TheoryData<string> ClinicRoles => [Roles.ClinicOwner, Roles.Staff, Roles.Staff, Roles.Staff];
 
     private static async Task<Guid> CreatedId(HttpResponseMessage response)
     {

@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Treatments.Application;
 using DentFlow.Treatments.Application.Commands;
 using DentFlow.Application.Common.Http;
@@ -17,7 +18,7 @@ public class TreatmentPlanCreateEndpoint(ISender sender)
     {
         Post("/patients/{patientId}/treatment-plans");
         // Clinical roles, the same as adding items to the plan (DT-12).
-        Roles("ClinicOwner", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Create a new treatment plan for a patient");
     }

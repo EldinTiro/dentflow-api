@@ -18,13 +18,11 @@ public class ClinicalRoleRulesTests(DentFlowAppFactory factory)
         return (await r.Content.ReadFromJsonAsync<IdDto>())!.Id;
     }
 
-    // A receptionist created plans but got 403 adding items to them
+    // Two roles since 2026-11-02: everyone in the clinic (Staff) works on treatment plans
     [Theory]
     [InlineData(Roles.ClinicOwner, HttpStatusCode.Created)]
-    [InlineData(Roles.Dentist, HttpStatusCode.Created)]
-    [InlineData(Roles.DentalNurse, HttpStatusCode.Created)]
-    [InlineData(Roles.Receptionist, HttpStatusCode.Forbidden)]
-    public async Task TreatmentPlans_AreCreatedByClinicalRolesOnly(string role, HttpStatusCode expected)
+    [InlineData(Roles.Staff, HttpStatusCode.Created)]
+    public async Task TreatmentPlans_AreCreatedByEveryClinicRole(string role, HttpStatusCode expected)
     {
         var patientId = await PatientAsync();
 
@@ -58,7 +56,7 @@ public class ClinicalRoleRulesTests(DentFlowAppFactory factory)
         });
         var appointmentId = (await booked.Content.ReadFromJsonAsync<IdDto>())!.Id;
 
-        var response = await factory.CreateAuthenticatedClient([Roles.Dentist])
+        var response = await factory.CreateAuthenticatedClient([Roles.Staff])
             .PostAsJsonAsync($"/api/v1/appointments/{appointmentId}/cancel", new { reason = "Patient moved" });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());

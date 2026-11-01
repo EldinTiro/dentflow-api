@@ -156,12 +156,12 @@ public class FinanceReportsApiTests(DentFlowAppFactory factory)
     [InlineData("/api/v1/finance/payments")]
     [InlineData("/api/v1/finance/summary")]
     [InlineData("/api/v1/finance/debtors")]
-    public async Task FinanceReports_Receptionist_IsForbidden(string url)
+    public async Task FinanceReports_Staff_IsForbidden(string url)
     {
         var (tenantId, slug, _) = await NewClinicAsync();
-        var receptionist = factory.CreateClientForTenant(tenantId, slug, "Receptionist");
+        var staff = factory.CreateClientForTenant(tenantId, slug, DentFlow.Domain.Identity.Roles.Staff);
 
-        var response = await receptionist.GetAsync(url);
+        var response = await staff.GetAsync(url);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

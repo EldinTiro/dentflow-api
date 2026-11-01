@@ -17,7 +17,7 @@ public class TenantCurrentEndpoint(ISender sender) : EndpointWithoutRequest<Tena
     public override void Configure()
     {
         Get("/tenant/current");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.Dentist, DomainRoles.DentalNurse, DomainRoles.Receptionist, DomainRoles.SuperAdmin);
+        Roles([.. DomainRoles.TenantRoles, DomainRoles.SuperAdmin]);
         Version(1);
         Summary(s => s.Summary = "Get the current user's tenant info including logo");
     }

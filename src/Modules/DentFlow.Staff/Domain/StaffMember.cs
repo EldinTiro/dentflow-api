@@ -121,9 +121,9 @@ public class StaffMember : TenantAuditableEntity
     /// </summary>
     public static StaffType TypeForAccountRole(string? role) => role switch
     {
-        DentFlow.Domain.Identity.Roles.Dentist => StaffType.Dentist,
-        DentFlow.Domain.Identity.Roles.DentalNurse => StaffType.DentalAssistant,
-        DentFlow.Domain.Identity.Roles.Receptionist => StaffType.Receptionist,
+        // The role no longer says the job: a new colleague starts as non-bookable desk staff
+        // and the Administrator sets the real type (Stomatolog…) on the profile.
+        DentFlow.Domain.Identity.Roles.Staff => StaffType.Receptionist,
         _ => StaffType.OfficeManager,
     };
 

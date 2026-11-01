@@ -15,7 +15,7 @@ public class DocumentUploadLimitTests(DentFlowAppFactory factory)
     [Fact]
     public async Task AFileOver20MB_Is400_DocumentTooLarge()
     {
-        var client = factory.CreateAuthenticatedClient([Roles.Receptionist]);
+        var client = factory.CreateAuthenticatedClient([Roles.Staff]);
         var created = await client.PostAsJsonAsync("/api/v1/patients", new { firstName = "Big", lastName = "Photo", smsOptIn = false, emailOptIn = false });
         var patientId = (await created.Content.ReadFromJsonAsync<IdDto>())!.Id;
 

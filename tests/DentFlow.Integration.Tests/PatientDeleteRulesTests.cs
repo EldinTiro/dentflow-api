@@ -11,7 +11,7 @@ public class PatientDeleteRulesTests(DentFlowAppFactory factory)
 {
     private record IdDto(Guid Id);
 
-    public static TheoryData<string> ClinicRoles => [Roles.ClinicOwner, Roles.Dentist, Roles.DentalNurse, Roles.Receptionist];
+    public static TheoryData<string> ClinicRoles => [Roles.ClinicOwner, Roles.Staff, Roles.Staff, Roles.Staff];
 
     private static async Task<Guid> NewPatientAsync(HttpClient client)
     {
@@ -54,7 +54,7 @@ public class PatientDeleteRulesTests(DentFlowAppFactory factory)
     [Fact]
     public async Task ThePatient_SaysWhetherItHasHistory()
     {
-        var client = factory.CreateAuthenticatedClient([Roles.Receptionist]);
+        var client = factory.CreateAuthenticatedClient([Roles.Staff]);
         var fresh = await NewPatientAsync(client);
         var withVisit = await NewPatientAsync(client);
         await AppointmentSeed.BookAsync(factory, withVisit, DateTime.UtcNow.AddDays(-5));

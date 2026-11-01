@@ -55,7 +55,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, dentistStaffId, dentistEmail) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, dentistStaffId, dentistEmail) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         var owner = await SignedInAsync(slug, ownerEmail);
 
         (await owner.DeleteAsync($"/api/v1/staff/{dentistStaffId}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -86,7 +86,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     public async Task UpdateOwnName_AlsoRenamesLinkedStaffProfile()
     {
         var (slug, tenantId) = await ClinicAsync();
-        var (_, staffId, email) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, staffId, email) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         var dentist = await SignedInAsync(slug, email);
 
         (await dentist.PutAsJsonAsync("/api/v1/users/me", new { firstName = "Amra", lastName = "Hadžić" }))
@@ -100,7 +100,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, staffId, email) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, staffId, email) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         var owner = await SignedInAsync(slug, ownerEmail);
 
         (await owner.PutAsJsonAsync($"/api/v1/staff/{staffId}", new { firstName = "Lejla", lastName = "Kovač", email }))
@@ -115,7 +115,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         var owner = await SignedInAsync(slug, ownerEmail);
 
         var response = await owner.PutAsJsonAsync($"/api/v1/staff/{staffId}", new { firstName = "Test", lastName = "Dentist", email = "other@life.test" });
@@ -133,7 +133,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, staffId, dentistEmail) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, staffId, dentistEmail) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         var owner = await SignedInAsync(slug, ownerEmail);
 
         var deactivated = await owner.PostAsync($"/api/v1/staff/{staffId}/deactivate", null);
@@ -155,7 +155,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         await AppointmentSeed.BookWithProviderAsync(factory, tenantId, staffId, DateTime.UtcNow.AddDays(2));
         var owner = await SignedInAsync(slug, ownerEmail);
 
@@ -181,13 +181,11 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData(Roles.Dentist)]
-    [InlineData(Roles.DentalNurse)]
-    [InlineData(Roles.Receptionist)]
+    [InlineData(Roles.Staff)]
     public async Task OnlyTheOwnerDeactivatesStaff(string role)
     {
         var (slug, tenantId) = await ClinicAsync();
-        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         var (_, _, callerEmail) = await PersonAsync(tenantId, role, StaffType.Receptionist);
         var caller = await SignedInAsync(slug, callerEmail);
 
@@ -200,7 +198,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, goneId, _) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, goneId, _) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         var owner = await SignedInAsync(slug, ownerEmail);
         (await owner.PostAsync($"/api/v1/staff/{goneId}/deactivate", null)).EnsureSuccessStatusCode();
 
@@ -214,7 +212,7 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
+        var (_, staffId, _) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
         await AppointmentSeed.BookWithProviderAsync(factory, tenantId, staffId, DateTime.UtcNow.AddDays(-10));
         var owner = await SignedInAsync(slug, ownerEmail);
 
@@ -233,14 +231,14 @@ public class StaffLifecycleTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, _, ownerEmail) = await PersonAsync(tenantId, Roles.ClinicOwner, StaffType.OfficeManager);
-        var (_, dentistStaffId, dentistEmail) = await PersonAsync(tenantId, Roles.Dentist, StaffType.Dentist);
-        var (_, _, receptionistEmail) = await PersonAsync(tenantId, Roles.Receptionist, StaffType.Receptionist);
+        var (_, dentistStaffId, dentistEmail) = await PersonAsync(tenantId, Roles.Staff, StaffType.Dentist);
+        var (_, _, receptionistEmail) = await PersonAsync(tenantId, Roles.Staff, StaffType.Receptionist);
         await SignedInAsync(slug, dentistEmail); // gives the dentist a last sign-in
         var owner = await SignedInAsync(slug, ownerEmail);
         var receptionist = await SignedInAsync(slug, receptionistEmail);
 
         var seenByOwner = (await owner.GetFromJsonAsync<StaffWithAccessDto>($"/api/v1/staff/{dentistStaffId}"))!.Access!;
-        seenByOwner.Role.Should().Be(Roles.Dentist);
+        seenByOwner.Role.Should().Be(Roles.Staff);
         seenByOwner.LastLoginAt.Should().NotBeNull();
 
         var seenByDesk = (await receptionist.GetFromJsonAsync<StaffWithAccessDto>($"/api/v1/staff/{dentistStaffId}"))!.Access!;

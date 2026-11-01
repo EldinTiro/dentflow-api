@@ -28,9 +28,7 @@ public class StaffAccessRulesTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData(Roles.Dentist)]
-    [InlineData(Roles.DentalNurse)]
-    [InlineData(Roles.Receptionist)]
+    [InlineData(Roles.Staff)]
     [InlineData(Roles.SuperAdmin)]
     public async Task CreateStaff_WithoutPeopleManage_Returns403(string role)
     {
@@ -40,9 +38,7 @@ public class StaffAccessRulesTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData(Roles.Dentist)]
-    [InlineData(Roles.DentalNurse)]
-    [InlineData(Roles.Receptionist)]
+    [InlineData(Roles.Staff)]
     public async Task ListStaff_AsAnyClinicRole_Returns200(string role)
     {
         var response = await factory.CreateAuthenticatedClient([role]).GetAsync("/api/v1/staff");

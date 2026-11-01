@@ -22,7 +22,7 @@ public class ValidationMessageTests(DentFlowAppFactory factory)
     [Fact]
     public async Task AnOutOfRangeToothNumber_ReadsLikeASentence()
     {
-        var client = factory.CreateAuthenticatedClient([Roles.Dentist]);
+        var client = factory.CreateAuthenticatedClient([Roles.Staff]);
         var patient = await client.PostAsJsonAsync("/api/v1/patients", new { firstName = "Tooth", lastName = "Msg", smsOptIn = false, emailOptIn = false });
         var patientId = (await patient.Content.ReadFromJsonAsync<IdDto>())!.Id;
         var plan = await client.PostAsJsonAsync($"/api/v1/patients/{patientId}/treatment-plans", new { title = "Plan" });

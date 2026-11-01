@@ -36,7 +36,7 @@ public class AddToothFindingEndpoint(ISender sender)
     {
         Post("/patients/{patientId}/teeth");
         // Clinical roles, like treatment plans (DT-12): the desk reads the chart, clinicians write it
-        Roles(DomainRoles.ClinicOwner, DomainRoles.Dentist, DomainRoles.DentalNurse);
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Record a finding on a tooth: caries, filling, crown, root canal, implant, missing");
     }
@@ -55,7 +55,7 @@ public class DeleteToothFindingEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Delete("/patients/{patientId}/teeth/{findingId}");
-        Roles(DomainRoles.ClinicOwner, DomainRoles.Dentist, DomainRoles.DentalNurse);
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
     }
 
