@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Queries;
 using DentFlow.Application.Common.Http;
@@ -11,7 +12,7 @@ public class AppointmentGetByIdEndpoint(ISender sender) : EndpointWithoutRequest
     public override void Configure()
     {
         Get("/appointments/{id}");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Get an appointment by ID");
     }

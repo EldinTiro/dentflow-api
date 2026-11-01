@@ -21,7 +21,7 @@ public class TransactionRunnerTests(DentFlowAppFactory factory)
     {
         var tenantId = await factory.SeedTenantAsync($"tx-{Guid.NewGuid():N}"[..18], "Tx Clinic");
         // Makes sure the Dentist role exists.
-        await factory.SeedUserAsync($"seed-{Guid.NewGuid():N}@tx.test", "Seed123!@#abcd", Roles.Dentist, tenantId);
+        await factory.SeedUserAsync($"seed-{Guid.NewGuid():N}@tx.test", "Seed123!@#abcd", Roles.Staff, tenantId);
         return (tenantId, $"tx-{Guid.NewGuid():N}@clinic.com");
     }
 
@@ -39,7 +39,7 @@ public class TransactionRunnerTests(DentFlowAppFactory factory)
         var provisioning = sp.GetRequiredService<IUserProvisioningService>();
         var db = sp.GetRequiredService<ApplicationDbContext>();
 
-        var userId = await provisioning.CreateUserAsync(email, "Tx123!@#abcdef", "Ana", "Tx", Roles.Dentist, tenantId);
+        var userId = await provisioning.CreateUserAsync(email, "Tx123!@#abcdef", "Ana", "Tx", Roles.Staff, tenantId);
         var staff = StaffMember.Create(StaffType.Dentist, "Ana", "Tx", email, null, null);
         staff.SetTenant(tenantId);
         staff.LinkUser(userId.Value);

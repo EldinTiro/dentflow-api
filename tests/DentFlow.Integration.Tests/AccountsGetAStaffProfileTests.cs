@@ -41,7 +41,7 @@ public class AccountsGetAStaffProfileTests(DentFlowAppFactory factory)
 
         var response = await factory.CreatePlatformAdminClient().PostAsJsonAsync(
             $"/api/v1/admin/tenants/{tenantId}/users",
-            new { email, firstName = "Prov", lastName = "Nurse", role = Roles.DentalNurse });
+            new { email, firstName = "Prov", lastName = "Nurse", role = Roles.Staff });
         response.IsSuccessStatusCode.Should().BeTrue(await response.Content.ReadAsStringAsync());
         var userId = (await response.Content.ReadFromJsonAsync<UserIdDto>())!.UserId;
 
@@ -50,7 +50,7 @@ public class AccountsGetAStaffProfileTests(DentFlowAppFactory factory)
         profile!.TenantId.Should().Be(tenantId);
         profile.Email.Should().Be(email);
         profile.FullName.Should().Be("Prov Nurse");
-        profile.StaffType.Should().Be(StaffType.DentalAssistant);
+        profile.StaffType.Should().Be(StaffType.Receptionist); // the Administrator sets the real type
         profile.IsActive.Should().BeTrue();
     }
 
@@ -60,11 +60,11 @@ public class AccountsGetAStaffProfileTests(DentFlowAppFactory factory)
         var email = $"inv-{Guid.NewGuid():N}@inv.test";
 
         var response = await factory.CreateAuthenticatedClient([Roles.ClinicOwner]).PostAsJsonAsync(
-            "/api/v1/users/invite", new { email, firstName = "Inv", lastName = "Dentist", role = Roles.Dentist });
+            "/api/v1/users/invite", new { email, firstName = "Inv", lastName = "Dentist", role = Roles.Staff });
         response.IsSuccessStatusCode.Should().BeTrue(await response.Content.ReadAsStringAsync());
         var userId = (await response.Content.ReadFromJsonAsync<UserIdDto>())!.UserId;
 
-        (await ProfileOfAsync(userId))!.StaffType.Should().Be(StaffType.Dentist);
+        (await ProfileOfAsync(userId))!.StaffType.Should().Be(StaffType.Receptionist);
     }
 
     [Fact]

@@ -13,7 +13,7 @@ namespace DentFlow.Integration.Tests;
 public class AppointmentApiTests(DentFlowAppFactory factory)
 {
     private readonly HttpClient _admin = factory.CreateAdminClient();
-    private readonly HttpClient _receptionist = factory.CreateReceptionistClient();
+    private readonly HttpClient _receptionist = factory.CreateStaffClient();
 
     // ── POST /api/v1/appointments ─────────────────────────────────────────
 

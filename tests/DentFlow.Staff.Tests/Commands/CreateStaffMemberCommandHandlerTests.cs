@@ -20,7 +20,7 @@ public class CreateStaffMemberCommandHandlerTests
         _sut = new CreateStaffMemberCommandHandler(_repo, _provisioning, _transaction);
     }
 
-    private static CreateStaffMemberCommand WithAccess(string? email = "amra@clinic.com", string role = Roles.Dentist) =>
+    private static CreateStaffMemberCommand WithAccess(string? email = "amra@clinic.com", string role = Roles.Staff) =>
         new(StaffType.Dentist, "Amra", "Begić", email, null, null, null, null, new StaffAccessRequest(role));
 
     // ── People-merge plan 2.3: profile + account in one call ──
@@ -36,7 +36,7 @@ public class CreateStaffMemberCommandHandlerTests
         result.IsError.Should().BeFalse();
         result.Value.TempPassword.Should().NotBeNullOrWhiteSpace();
         await _repo.Received(1).AddAsync(Arg.Is<StaffMember>(s => s.UserId == userId), Arg.Any<CancellationToken>());
-        await _provisioning.Received(1).CreateUserAsync("amra@clinic.com", result.Value.TempPassword!, "Amra", "Begić", Roles.Dentist, Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _provisioning.Received(1).CreateUserAsync("amra@clinic.com", result.Value.TempPassword!, "Amra", "Begić", Roles.Staff, Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

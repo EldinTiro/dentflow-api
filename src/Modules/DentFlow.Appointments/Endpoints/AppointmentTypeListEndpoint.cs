@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Queries;
 using DentFlow.Application.Common.Http;
@@ -12,7 +13,7 @@ public class AppointmentTypeListEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/appointment-types");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "List all appointment types for the current tenant");
     }

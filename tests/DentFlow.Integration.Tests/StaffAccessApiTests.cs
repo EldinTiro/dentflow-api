@@ -40,7 +40,7 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
         var (slug, _, owner) = await ClinicAsync();
         var (staffId, email) = await ProfileAsync(owner);
 
-        var grant = await owner.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Dentist });
+        var grant = await owner.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Staff });
 
         grant.StatusCode.Should().Be(HttpStatusCode.OK, await grant.Content.ReadAsStringAsync());
         var dto = (await grant.Content.ReadFromJsonAsync<GrantDto>())!;
@@ -54,9 +54,9 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
     {
         var (_, _, owner) = await ClinicAsync();
         var (staffId, _) = await ProfileAsync(owner);
-        await owner.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Dentist });
+        await owner.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Staff });
 
-        var again = await owner.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Dentist });
+        var again = await owner.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Staff });
 
         again.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
@@ -68,7 +68,7 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
         var (_, _, ownerB) = await ClinicAsync();
         var (staffId, _) = await ProfileAsync(ownerA);
 
-        var response = await ownerB.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Dentist });
+        var response = await ownerB.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Staff });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -78,9 +78,9 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId, owner) = await ClinicAsync();
         var (staffId, _) = await ProfileAsync(owner);
-        var receptionist = factory.CreateClientForTenant(tenantId, slug, Roles.Receptionist);
+        var receptionist = factory.CreateClientForTenant(tenantId, slug, Roles.Staff);
 
-        var response = await receptionist.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Dentist });
+        var response = await receptionist.PostAsJsonAsync($"/api/v1/staff/{staffId}/access", new { role = Roles.Staff });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -100,7 +100,7 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
         var created = await owner.PostAsJsonAsync("/api/v1/staff", new
         {
             staffType = "Dentist", firstName = "Amra", lastName = "Begić", email, colorHex = "#3B82F6",
-            access = new { role = Roles.Dentist }
+            access = new { role = Roles.Staff }
         });
 
         created.StatusCode.Should().Be(HttpStatusCode.Created, await created.Content.ReadAsStringAsync());
@@ -116,12 +116,12 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
     {
         var (_, tenantId, owner) = await ClinicAsync();
         var email = $"taken-{Guid.NewGuid():N}@clinic.com";
-        await factory.SeedUserAsync(email, "Taken123!@#abcd", Roles.Dentist, tenantId);
+        await factory.SeedUserAsync(email, "Taken123!@#abcd", Roles.Staff, tenantId);
 
         var created = await owner.PostAsJsonAsync("/api/v1/staff", new
         {
             staffType = "Dentist", firstName = "Amra", lastName = "Begić", email, colorHex = "#3B82F6",
-            access = new { role = Roles.Dentist }
+            access = new { role = Roles.Staff }
         });
 
         created.StatusCode.Should().Be(HttpStatusCode.Conflict);
@@ -141,17 +141,17 @@ public class StaffAccessApiTests(DentFlowAppFactory factory)
         var (_, _, owner) = await ClinicAsync();
         var (linkedId, _) = await ProfileAsync(owner);
         var (plainId, _) = await ProfileAsync(owner);
-        await owner.PostAsJsonAsync($"/api/v1/staff/{linkedId}/access", new { role = Roles.DentalNurse });
+        await owner.PostAsJsonAsync($"/api/v1/staff/{linkedId}/access", new { role = Roles.Staff });
 
         var list = await owner.GetFromJsonAsync<PagedWithAccess>("/api/v1/staff?pageSize=100");
 
         var linked = list!.Items.Single(s => s.Id == linkedId).Access;
         linked.Should().NotBeNull();
-        linked!.Role.Should().Be(Roles.DentalNurse);
+        linked!.Role.Should().Be(Roles.Staff);
         linked.IsActive.Should().BeTrue();
         linked.MustChangePassword.Should().BeTrue();
         linked.LastLoginAt.Should().BeNull();
         list.Items.Single(s => s.Id == plainId).Access.Should().BeNull();
-        (await owner.GetFromJsonAsync<StaffWithAccess>($"/api/v1/staff/{linkedId}"))!.Access!.Role.Should().Be(Roles.DentalNurse);
+        (await owner.GetFromJsonAsync<StaffWithAccess>($"/api/v1/staff/{linkedId}"))!.Access!.Role.Should().Be(Roles.Staff);
     }
 }

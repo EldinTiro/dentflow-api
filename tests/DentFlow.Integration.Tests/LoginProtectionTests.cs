@@ -22,7 +22,7 @@ public class LoginProtectionTests(DentFlowAppFactory factory)
         var slug = $"lock-{Guid.NewGuid():N}"[..16];
         var tenantId = await factory.SeedTenantAsync(slug, "Lock Clinic");
         var email = $"lock-{Guid.NewGuid():N}@lock.test";
-        await factory.SeedUserAsync(email, Password, Roles.Receptionist, tenantId);
+        await factory.SeedUserAsync(email, Password, Roles.Staff, tenantId);
         return (slug, email);
     }
 

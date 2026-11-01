@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using DentFlow.Domain.Identity;
 
 namespace DentFlow.Integration.Tests;
 
@@ -52,9 +53,7 @@ public class FinanceAccessTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData("Dentist")]
-    [InlineData("DentalNurse")]
-    [InlineData("Receptionist")]
+    [InlineData(Roles.Staff)]
     public async Task DashboardFinance_StaffWithoutFinanceView_IsForbidden(string role)
     {
         var (tenantId, _, _) = await SeedBillAsync();
@@ -66,8 +65,7 @@ public class FinanceAccessTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData("Dentist")]
-    [InlineData("Receptionist")]
+    [InlineData(Roles.Staff)]
     public async Task DashboardStats_StaffWithoutFinanceView_GetsNoMoneyFigures(string role)
     {
         var (tenantId, _, _) = await SeedBillAsync();
@@ -81,8 +79,7 @@ public class FinanceAccessTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData("Dentist")]
-    [InlineData("Receptionist")]
+    [InlineData(Roles.Staff)]
     public async Task InvoiceLedger_StaffWithoutFinanceView_IsForbidden(string role)
     {
         var (tenantId, _, _) = await SeedBillAsync();
@@ -106,8 +103,7 @@ public class FinanceAccessTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData("Dentist")]
-    [InlineData("Receptionist")]
+    [InlineData(Roles.Staff)]
     public async Task PatientInvoices_DeskAndClinicalStaff_CanStillSeeAPatientsBill(string role)
     {
         var (tenantId, patientId, invoiceId) = await SeedBillAsync();
@@ -121,7 +117,7 @@ public class FinanceAccessTests(DentFlowAppFactory factory)
     public async Task Payment_Receptionist_CanStillTakeAPayment()
     {
         var (tenantId, _, invoiceId) = await SeedBillAsync();
-        var receptionist = factory.CreateClientForTenant(tenantId, Slug, "Receptionist");
+        var receptionist = factory.CreateClientForTenant(tenantId, Slug, Roles.Staff);
 
         var response = await receptionist.PostAsJsonAsync($"/api/v1/invoices/{invoiceId}/payments",
             new { amount = 10m, method = "Cash", paidAt = DateTime.UtcNow });

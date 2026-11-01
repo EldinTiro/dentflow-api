@@ -49,7 +49,7 @@ public class StaffAccountBackfillTests(DentFlowAppFactory factory)
         var tenantId = await ClinicAsync();
         var email = $"match-{Guid.NewGuid():N}@back.test";
         var profileId = await ProfileAsync(tenantId, email.ToUpperInvariant());
-        var userId = await factory.SeedUserAsync(email, Password, Roles.Dentist, tenantId);
+        var userId = await factory.SeedUserAsync(email, Password, Roles.Staff, tenantId);
 
         await RunAsync();
 
@@ -57,9 +57,8 @@ public class StaffAccountBackfillTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData(Roles.Dentist, StaffType.Dentist)]
-    [InlineData(Roles.DentalNurse, StaffType.DentalAssistant)]
-    [InlineData(Roles.Receptionist, StaffType.Receptionist)]
+    // The role no longer says the job (2026-11-02): Staff starts as non-bookable desk staff
+    [InlineData(Roles.Staff, StaffType.Receptionist)]
     [InlineData(Roles.ClinicOwner, StaffType.OfficeManager)]
     public async Task AccountWithoutAProfile_GetsOneCreated_FromItsNameAndRole(string role, StaffType expected)
     {
@@ -85,7 +84,7 @@ public class StaffAccountBackfillTests(DentFlowAppFactory factory)
         await ProfileAsync(tenantId, email);
         // The unique email index only covers non-deleted rows with the exact same text.
         await ProfileAsync(tenantId, email.ToUpperInvariant());
-        var userId = await factory.SeedUserAsync(email, Password, Roles.Dentist, tenantId);
+        var userId = await factory.SeedUserAsync(email, Password, Roles.Staff, tenantId);
 
         var summary = await RunAsync();
 
@@ -107,7 +106,7 @@ public class StaffAccountBackfillTests(DentFlowAppFactory factory)
     public async Task RunningItTwice_ChangesNothingTheSecondTime()
     {
         var tenantId = await ClinicAsync();
-        await factory.SeedUserAsync($"twice-{Guid.NewGuid():N}@back.test", Password, Roles.Receptionist, tenantId);
+        await factory.SeedUserAsync($"twice-{Guid.NewGuid():N}@back.test", Password, Roles.Staff, tenantId);
         await RunAsync();
 
         var second = await RunAsync();
@@ -121,7 +120,7 @@ public class StaffAccountBackfillTests(DentFlowAppFactory factory)
     {
         var tenantId = await ClinicAsync();
         var email = $"off-{Guid.NewGuid():N}@back.test";
-        var userId = await factory.SeedUserAsync(email, Password, Roles.Dentist, tenantId);
+        var userId = await factory.SeedUserAsync(email, Password, Roles.Staff, tenantId);
         using (var scope = factory.Services.CreateScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -143,7 +142,7 @@ public class StaffAccountBackfillTests(DentFlowAppFactory factory)
         var tenantId = await ClinicAsync();
         var email = $"old-{Guid.NewGuid():N}@back.test";
         var profileId = await ProfileAsync(tenantId, email, active: false);
-        var userId = await factory.SeedUserAsync(email, Password, Roles.Dentist, tenantId);
+        var userId = await factory.SeedUserAsync(email, Password, Roles.Staff, tenantId);
 
         await RunAsync();
 

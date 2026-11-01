@@ -31,7 +31,7 @@ public class DocumentUploadTypeTests(DentFlowAppFactory factory)
             tenant.SetPlan("Enterprise", null);
             await db.SaveChangesAsync();
         }
-        return factory.CreateClientForTenant(tenantId, slug, Roles.Receptionist);
+        return factory.CreateClientForTenant(tenantId, slug, Roles.Staff);
     }
 
     [Theory]

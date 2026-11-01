@@ -197,11 +197,9 @@ public class DentFlowAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public HttpClient CreateAdminClient(string? tenantSlug = null) =>
         CreateAuthenticatedClient(["ClinicOwner"], tenantSlug);
 
-    public HttpClient CreateReceptionistClient(string? tenantSlug = null) =>
-        CreateAuthenticatedClient(["Receptionist"], tenantSlug);
-
-    public HttpClient CreateDentistClient(string? tenantSlug = null) =>
-        CreateAuthenticatedClient(["Dentist"], tenantSlug);
+    /// <summary>Anyone in the clinic who is not the Administrator ("Osoblje").</summary>
+    public HttpClient CreateStaffClient(string? tenantSlug = null) =>
+        CreateAuthenticatedClient([DentFlow.Domain.Identity.Roles.Staff], tenantSlug);
 
     private static string CreateToken(string[] roles, string tenantSlug, Guid? tenantId = null, bool includeTenant = true)
     {

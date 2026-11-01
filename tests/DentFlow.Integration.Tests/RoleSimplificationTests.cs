@@ -45,8 +45,12 @@ public class RoleSimplificationTests(DentFlowAppFactory factory)
 
     [Theory]
     [InlineData("ClinicAdmin", Roles.ClinicOwner)]
-    [InlineData("Hygienist", Roles.DentalNurse)]
-    [InlineData("BillingStaff", Roles.Receptionist)]
+    [InlineData("Hygienist", Roles.Staff)]
+    [InlineData("BillingStaff", Roles.Staff)]
+    // 2026-11-02: roles stop being job titles; dentists, nurses and reception are all Staff
+    [InlineData("Dentist", Roles.Staff)]
+    [InlineData("DentalNurse", Roles.Staff)]
+    [InlineData("Receptionist", Roles.Staff)]
     public async Task SyncRoles_MovesUsersOutOfARemovedRole(string retired, string replacement)
     {
         var user = await UserInRetiredRoleAsync(retired);
@@ -70,12 +74,12 @@ public class RoleSimplificationTests(DentFlowAppFactory factory)
     }
 
     [Fact]
-    public async Task DentalNurse_CanDoChairsideAndFrontDeskWork()
+    public async Task Staff_CanDoChairsideAndFrontDeskWork()
     {
         var slug = $"nurse{Guid.NewGuid():N}"[..12];
         var tenantId = await factory.SeedTenantAsync(slug, "Nurse Clinic");
         var owner = factory.CreateClientForTenant(tenantId, slug, Roles.ClinicOwner);
-        var nurse = factory.CreateClientForTenant(tenantId, slug, Roles.DentalNurse);
+        var nurse = factory.CreateClientForTenant(tenantId, slug, Roles.Staff);
 
         var patient = await nurse.PostAsJsonAsync("/api/v1/patients", new
         {
@@ -98,11 +102,11 @@ public class RoleSimplificationTests(DentFlowAppFactory factory)
     [InlineData("/api/v1/dashboard/finance")]
     [InlineData("/api/v1/invoices")]
     [InlineData("/api/v1/finance/debtors")]
-    public async Task DentalNurse_CannotSeeClinicFinances(string url)
+    public async Task Staff_CannotSeeClinicFinances(string url)
     {
         var slug = $"nurse{Guid.NewGuid():N}"[..12];
         var tenantId = await factory.SeedTenantAsync(slug, "Nurse Clinic");
-        var nurse = factory.CreateClientForTenant(tenantId, slug, Roles.DentalNurse);
+        var nurse = factory.CreateClientForTenant(tenantId, slug, Roles.Staff);
 
         (await nurse.GetAsync(url)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

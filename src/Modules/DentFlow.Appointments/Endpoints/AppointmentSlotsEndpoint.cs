@@ -1,5 +1,6 @@
 using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Application.Common.Interfaces;
 using DentFlow.Appointments.Application.Queries;
 using DentFlow.Application.Common.Http;
@@ -12,7 +13,7 @@ public class AppointmentSlotsEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/staff/{providerId}/slots");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Get available appointment slots for a provider on a given date.");
     }

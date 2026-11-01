@@ -31,7 +31,7 @@ public class ToothChartApiTests(DentFlowAppFactory factory)
     public async Task Findings_CanBeRecordedListedAndRemoved()
     {
         var patient = await PatientAsync(_owner);
-        var dentist = factory.CreateDentistClient();
+        var dentist = factory.CreateStaffClient();
 
         var add = await dentist.PostAsJsonAsync($"/api/v1/patients/{patient}/teeth", new { tooth = 36, condition = "Filling", surfaces = "mod", notes = "Composite" });
         add.StatusCode.Should().Be(HttpStatusCode.Created, await add.Content.ReadAsStringAsync());
@@ -57,16 +57,14 @@ public class ToothChartApiTests(DentFlowAppFactory factory)
         (await r.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("ToothFinding.InvalidTooth");
     }
 
-    // Same rule as treatment plans (DT-12): the desk reads the chart, clinicians write it
+    // Two roles since 2026-11-02: everyone in the clinic records findings, the platform admin does not
     [Fact]
-    public async Task Add_AsReceptionist_Returns403_ButTheyCanReadIt()
+    public async Task Add_AsThePlatformAdmin_Returns403()
     {
         var patient = await PatientAsync(_owner);
-        var desk = factory.CreateReceptionistClient();
 
-        (await desk.PostAsJsonAsync($"/api/v1/patients/{patient}/teeth", new { tooth = 36, condition = "Caries" }))
+        (await factory.CreatePlatformAdminClient().PostAsJsonAsync($"/api/v1/patients/{patient}/teeth", new { tooth = 36, condition = "Caries" }))
             .StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await desk.GetAsync($"/api/v1/patients/{patient}/teeth")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]

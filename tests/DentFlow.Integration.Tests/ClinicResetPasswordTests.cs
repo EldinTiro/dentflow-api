@@ -44,7 +44,7 @@ public class ClinicResetPasswordTests(DentFlowAppFactory factory)
     {
         var (slug, tenantId) = await ClinicAsync();
         var (_, ownerEmail) = await UserAsync(tenantId, Roles.ClinicOwner);
-        var (dentistId, dentistEmail) = await UserAsync(tenantId, Roles.Dentist);
+        var (dentistId, dentistEmail) = await UserAsync(tenantId, Roles.Staff);
         var (owner, _) = await SignedInAsync(slug, ownerEmail);
 
         var reset = await owner.PostAsync($"/api/v1/users/{dentistId}/reset-password", null);
@@ -61,7 +61,7 @@ public class ClinicResetPasswordTests(DentFlowAppFactory factory)
         var (slug, tenantId) = await ClinicAsync();
         var (_, otherTenant) = await ClinicAsync();
         var (_, ownerEmail) = await UserAsync(tenantId, Roles.ClinicOwner);
-        var (strangerId, _) = await UserAsync(otherTenant, Roles.Dentist);
+        var (strangerId, _) = await UserAsync(otherTenant, Roles.Staff);
         var (owner, _) = await SignedInAsync(slug, ownerEmail);
 
         (await owner.PostAsync($"/api/v1/users/{strangerId}/reset-password", null)).StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -84,8 +84,8 @@ public class ClinicResetPasswordTests(DentFlowAppFactory factory)
     public async Task Receptionist_CannotResetPasswords()
     {
         var (slug, tenantId) = await ClinicAsync();
-        var (_, receptionistEmail) = await UserAsync(tenantId, Roles.Receptionist);
-        var (dentistId, _) = await UserAsync(tenantId, Roles.Dentist);
+        var (_, receptionistEmail) = await UserAsync(tenantId, Roles.Staff);
+        var (dentistId, _) = await UserAsync(tenantId, Roles.Staff);
         var (receptionist, _) = await SignedInAsync(slug, receptionistEmail);
 
         (await receptionist.PostAsync($"/api/v1/users/{dentistId}/reset-password", null)).StatusCode.Should().Be(HttpStatusCode.Forbidden);

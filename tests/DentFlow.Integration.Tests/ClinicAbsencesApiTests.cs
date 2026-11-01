@@ -46,7 +46,7 @@ public class ClinicAbsencesApiTests(DentFlowAppFactory factory)
         await AbsenceAsync(owner, ana, "2026-11-20T07:00:00Z", "2026-11-21T16:00:00Z");              // after the range
 
         // Every role sees the dashboard, so a receptionist must be able to read it
-        var reception = factory.CreateClientForTenant(tenantId, slug, Roles.Receptionist);
+        var reception = factory.CreateClientForTenant(tenantId, slug, Roles.Staff);
         var r = await reception.GetAsync("/api/v1/staff/blocked-times?from=2026-10-25T23:00:00Z&to=2026-11-08T23:00:00Z");
 
         r.StatusCode.Should().Be(HttpStatusCode.OK, await r.Content.ReadAsStringAsync());

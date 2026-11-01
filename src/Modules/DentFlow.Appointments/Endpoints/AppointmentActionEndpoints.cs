@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Appointments.Application;
 using DentFlow.Appointments.Application.Commands;
 using DentFlow.Appointments.Application.Queries;
@@ -13,7 +14,7 @@ public class AppointmentRescheduleEndpoint(ISender sender) : Endpoint<Reschedule
     {
         Put("/appointments/{id}/reschedule");
         // Same roles as booking: a dentist who may book may also move the visit
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Reschedule an appointment to a new time slot");
     }
@@ -40,7 +41,7 @@ public class AppointmentCancelEndpoint(ISender sender) : Endpoint<CancelAppointm
     {
         Post("/appointments/{id}/cancel");
         // Every clinic role: a patient with a visit ahead can't be deactivated (D10, DT-12).
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Cancel an appointment");
     }
@@ -67,7 +68,7 @@ public class AppointmentUpdateStatusEndpoint(ISender sender) : Endpoint<UpdateSt
     public override void Configure()
     {
         Patch("/appointments/{id}/status");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Advance appointment status following the allowed lifecycle transitions");
     }
@@ -121,7 +122,7 @@ public class AppointmentUpdateNotesEndpoint(ISender sender) : Endpoint<UpdateNot
     public override void Configure()
     {
         Patch("/appointments/{id}/notes");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Update the notes field on an appointment");
     }
@@ -149,7 +150,7 @@ public class AppointmentGetHistoryEndpoint(ISender sender)
     public override void Configure()
     {
         Get("/appointments/{id}/history");
-        Roles("ClinicOwner", "Receptionist", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Get the status change history for an appointment");
     }

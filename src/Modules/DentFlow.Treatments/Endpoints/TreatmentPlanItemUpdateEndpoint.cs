@@ -1,5 +1,6 @@
 ﻿using FastEndpoints;
 using MediatR;
+using DomainRoles = DentFlow.Domain.Identity.Roles;
 using DentFlow.Treatments.Application;
 using DentFlow.Treatments.Application.Commands;
 using DentFlow.Treatments.Domain;
@@ -21,7 +22,7 @@ public class TreatmentPlanItemUpdateEndpoint(ISender sender)
     public override void Configure()
     {
         Put("/treatment-plans/{planId}/items/{itemId}");
-        Roles("ClinicOwner", "Dentist", "DentalNurse");
+        Roles([.. DomainRoles.TenantRoles]);
         Version(1);
         Summary(s => s.Summary = "Update a treatment plan item");
     }

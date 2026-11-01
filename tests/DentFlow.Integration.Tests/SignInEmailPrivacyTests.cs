@@ -17,11 +17,11 @@ public class SignInEmailPrivacyTests(DentFlowAppFactory factory)
     {
         var email = $"taken-{Guid.NewGuid():N}@elsewhere.test";
         var otherTenant = await factory.SeedTenantAsync("privacy-other", "Other Clinic");
-        await factory.SeedUserAsync(email, "Other123!@#abcd", Roles.Dentist, otherTenant);
+        await factory.SeedUserAsync(email, "Other123!@#abcd", Roles.Staff, otherTenant);
 
         var response = await factory.CreateAuthenticatedClient([Roles.ClinicOwner]).PostAsJsonAsync("/api/v1/staff", new
         {
-            staffType = "Dentist", firstName = "New", lastName = "Hire", email, access = new { role = Roles.Dentist },
+            staffType = "Dentist", firstName = "New", lastName = "Hire", email, access = new { role = Roles.Staff },
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);

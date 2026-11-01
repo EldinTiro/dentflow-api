@@ -31,7 +31,7 @@ public class OwnProfileTests(DentFlowAppFactory factory)
     [Fact]
     public async Task UpdateOwnName_IsSaved()
     {
-        var client = await SignedInAsync(Roles.Receptionist);
+        var client = await SignedInAsync(Roles.Staff);
 
         var response = await client.PutAsJsonAsync("/api/v1/users/me", new { firstName = "Amra", lastName = "Hadžić" });
 
@@ -43,7 +43,7 @@ public class OwnProfileTests(DentFlowAppFactory factory)
     [Fact]
     public async Task UpdateOwnName_Empty_Returns400()
     {
-        var client = await SignedInAsync(Roles.Receptionist);
+        var client = await SignedInAsync(Roles.Staff);
 
         var response = await client.PutAsJsonAsync("/api/v1/users/me", new { firstName = " ", lastName = "X" });
 
@@ -51,9 +51,7 @@ public class OwnProfileTests(DentFlowAppFactory factory)
     }
 
     [Theory]
-    [InlineData(Roles.Dentist)]
-    [InlineData(Roles.DentalNurse)]
-    [InlineData(Roles.Receptionist)]
+    [InlineData(Roles.Staff)]
     public async Task EveryRole_CanReadItsOwnProfileAndPreferences(string role)
     {
         var client = await SignedInAsync(role);
