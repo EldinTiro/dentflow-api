@@ -12,6 +12,13 @@ public interface IStaffDirectory
     /// </summary>
     Task RenameLinkedProfileAsync(Guid userId, string firstName, string lastName, CancellationToken ct);
 
+    /// <summary>
+    /// Gives the profile linked to this account its new sign-in email (the profile email is the
+    /// sign-in email while linked, DT-20). False when another profile in the clinic already has
+    /// it; true when there is no linked profile.
+    /// </summary>
+    Task<bool> ChangeLinkedProfileEmailAsync(Guid userId, string email, CancellationToken ct);
+
     /// <summary>The staff member in the caller's clinic, or null when there is none (DT-02).</summary>
     Task<StaffBookability?> GetBookabilityAsync(Guid staffId, CancellationToken ct);
 

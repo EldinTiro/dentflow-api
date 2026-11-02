@@ -93,6 +93,13 @@ public class StaffMember : TenantAuditableEntity
         SetUpdated();
     }
 
+    /// <summary>The account's sign-in email changed; the profile shows the same one (DT-20).</summary>
+    public void UseSignInEmail(string email)
+    {
+        Email = email;
+        SetUpdated();
+    }
+
     public ErrorOr<Success> Deactivate()
     {
         if (!IsActive) return StaffErrors.AlreadyInactive;

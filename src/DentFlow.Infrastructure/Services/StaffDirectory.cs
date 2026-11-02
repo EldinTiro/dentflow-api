@@ -16,6 +16,21 @@ internal sealed class StaffDirectory(ApplicationDbContext db) : IStaffDirectory
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<bool> ChangeLinkedProfileEmailAsync(Guid userId, string email, CancellationToken ct)
+    {
+        var staff = await db.Set<StaffMember>().FirstOrDefaultAsync(s => s.UserId == userId, ct);
+        if (staff is null) return true;
+
+        var lower = email.ToLower();
+        var takenByAnother = await db.Set<StaffMember>()
+            .AnyAsync(s => s.Id != staff.Id && s.Email != null && s.Email.ToLower() == lower, ct);
+        if (takenByAnother) return false;
+
+        staff.UseSignInEmail(email);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     public async Task CreateLinkedProfileAsync(
         Guid userId, Guid tenantId, string firstName, string lastName, string email, string role, CancellationToken ct)
     {

@@ -170,7 +170,7 @@ if (patient is null) return PatientErrors.NotFound;
 - A person is a `StaffMember`. Signing in is an **optional** `ApplicationUser` linked by `StaffMember.UserId` (unique per clinic). There is no separate Team list
 - `POST /staff { …, access?: { role } }` creates profile + account in one transaction and returns `tempPassword` once; `POST /staff/{id}/access { role }` gives access later. The linked email is the login email and can't be edited on the profile (`Staff.EmailLockedByAccess`); names stay in sync both ways
 - Staff responses carry `access` (`StaffAccessSummary`: role, active, must-change-password, last sign-in) and `isBookable` (active + clinical staff type) — clients use `isBookable`, never their own staff-type lists
-- Clinic-side account actions: `PUT /users/{id}/role`, `PUT /users/{id}/status`, `POST /users/{id}/reset-password` (all `people.manage`, guarded by `UserManagementGuard`)
+- Clinic-side account actions: `PUT /users/{id}/role`, `PUT /users/{id}/status`, `PUT /users/{id}/email` (sign-in email; the linked profile follows, 409 `Auth.EmailAlreadyExists`), `POST /users/{id}/reset-password` (all `people.manage`, guarded by `UserManagementGuard`)
 - Cross-module seams in `DentFlow.Application`: `ITransactionRunner` (one transaction across modules; joins an open one), `IUserAccountDirectory` (access summaries), `IUserAccountLifecycle` (deactivate / rename an account with the guards), `IStaffDirectory`, `IAppointmentReader`, `IPatientHistoryReader`, `IPatientDirectory`
 - `StaffAccountBackfill` runs at startup after the role sync: every clinic account gets exactly one profile (link by email, else create)
 
