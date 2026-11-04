@@ -103,7 +103,7 @@ public class GetPatientByIdQueryHandlerTests
 
     public GetPatientByIdQueryHandlerTests()
     {
-        _sut = new GetPatientByIdQueryHandler(_repo, NSubstitute.Substitute.For<DentFlow.Application.Common.Interfaces.IPatientHistoryReader>());
+        _sut = new GetPatientByIdQueryHandler(_repo, NSubstitute.Substitute.For<DentFlow.Application.Common.Interfaces.IPatientHistoryReader>(), NSubstitute.Substitute.For<DentFlow.Application.Common.Interfaces.IPatientInsightsReader>());
     }
 
     [Fact]

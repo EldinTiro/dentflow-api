@@ -36,7 +36,10 @@ public record PatientResponse(
     string? DeactivationReason,
     // Only on GET /patients/{id}: whether "Delete duplicate" can work (DT-19, D9).
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    bool? HasHistory = null)
+    bool? HasHistory = null,
+    // Only on GET /patients: last visit, next appointment, balance, allergies (patients redesign).
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    DentFlow.Application.Common.Interfaces.PatientInsights? Insights = null)
 {
     public static PatientResponse FromEntity(Patient p) => new(
         p.Id,

@@ -13,13 +13,13 @@ namespace DentFlow.Integration.Tests;
 internal static class AppointmentSeed
 {
     public static async Task<Guid> BookAsync(
-        DentFlowAppFactory factory, Guid patientId, DateTime startAt, Guid? providerId = null)
+        DentFlowAppFactory factory, Guid patientId, DateTime startAt, Guid? providerId = null, string? status = null)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var patient = await db.Set<Patient>().IgnoreQueryFilters().SingleAsync(p => p.Id == patientId);
 
-        return await AddAsync(db, patient.TenantId, patientId, providerId ?? Guid.NewGuid(), startAt);
+        return await AddAsync(db, patient.TenantId, patientId, providerId ?? Guid.NewGuid(), startAt, status);
     }
 
     /// <summary>An appointment with this provider in this clinic; the patient doesn't matter.</summary>
@@ -30,9 +30,11 @@ internal static class AppointmentSeed
         return await AddAsync(db, tenantId, Guid.NewGuid(), providerId, startAt);
     }
 
-    private static async Task<Guid> AddAsync(ApplicationDbContext db, Guid tenantId, Guid patientId, Guid providerId, DateTime startAt)
+    private static async Task<Guid> AddAsync(ApplicationDbContext db, Guid tenantId, Guid patientId, Guid providerId, DateTime startAt, string? status = null)
     {
         var appointment = Appointment.Create(patientId, providerId, Guid.NewGuid(), startAt, startAt.AddMinutes(30));
+        // History tests need visits that already happened (Completed, NoShow…)
+        if (status is not null) appointment.ForceStatus(status);
         appointment.SetTenant(tenantId);
         db.Appointments.Add(appointment);
         await db.SaveChangesAsync();
