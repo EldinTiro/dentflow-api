@@ -6,7 +6,7 @@ using DentFlow.Patients.Domain;
 
 namespace DentFlow.Patients.Application.Queries;
 
-public class GetPatientByIdQueryHandler(IPatientRepository patientRepository, IPatientHistoryReader history)
+public class GetPatientByIdQueryHandler(IPatientRepository patientRepository, IPatientHistoryReader history, IPatientInsightsReader insights)
     : IRequestHandler<GetPatientByIdQuery, ErrorOr<PatientResponse>>
 {
     public async Task<ErrorOr<PatientResponse>> Handle(
@@ -20,6 +20,8 @@ public class GetPatientByIdQueryHandler(IPatientRepository patientRepository, IP
         return PatientResponse.FromEntity(patient) with
         {
             HasHistory = await history.HasHistoryAsync(patient.Id, cancellationToken),
+            // The record's header: next appointment, last visit, balance, allergies (patients redesign C)
+            Insights = (await insights.GetAsync([patient.Id], DateTime.UtcNow, cancellationToken)).GetValueOrDefault(patient.Id),
         };
     }
 }
