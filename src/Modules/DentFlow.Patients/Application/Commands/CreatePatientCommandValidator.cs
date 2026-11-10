@@ -7,6 +7,8 @@ public class CreatePatientCommandValidator : AbstractValidator<CreatePatientComm
     public CreatePatientCommandValidator()
     {
         RuleFor(x => x.FirstName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.PatientNumber).Empty().When(x => x.WithoutCard)
+            .WithMessage("A patient saved without a card has no card number yet.");
         RuleFor(x => x.LastName).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Email).EmailAddress().MaximumLength(255)
             .When(x => !string.IsNullOrWhiteSpace(x.Email));

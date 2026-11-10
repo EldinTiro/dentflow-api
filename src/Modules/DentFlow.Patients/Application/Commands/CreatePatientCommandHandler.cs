@@ -19,8 +19,8 @@ public class CreatePatientCommandHandler(IPatientRepository patientRepository)
                 return PatientErrors.AlreadyExists;
         }
 
-        var patientNumber = !string.IsNullOrWhiteSpace(command.PatientNumber)
-            ? command.PatientNumber
+        var patientNumber = command.WithoutCard ? null
+            : !string.IsNullOrWhiteSpace(command.PatientNumber) ? command.PatientNumber
             : await patientRepository.GeneratePatientNumberAsync(cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(command.PatientNumber))

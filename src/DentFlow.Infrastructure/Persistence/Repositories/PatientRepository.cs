@@ -72,10 +72,10 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
         if (!raw.Any(char.IsLetter))
         {
             var digits = new string(raw.Where(char.IsDigit).ToArray()).TrimStart('0');
-            if (digits.Length == 0) return query.Where(p => p.PatientNumber.Contains(raw));
+            if (digits.Length == 0) return query.Where(p => p.PatientNumber != null && p.PatientNumber.Contains(raw));
 
             return query.Where(p =>
-                p.PatientNumber.Contains(raw) ||
+                (p.PatientNumber != null && p.PatientNumber.Contains(raw)) ||
                 (p.PhoneMobile != null && p.PhoneMobile.Replace("+", "").Replace(" ", "").Contains(digits)) ||
                 (p.PhoneHome != null && p.PhoneHome.Replace("+", "").Replace(" ", "").Contains(digits)) ||
                 (p.PhoneWork != null && p.PhoneWork.Replace("+", "").Replace(" ", "").Contains(digits)));
@@ -90,7 +90,7 @@ public class PatientRepository(ApplicationDbContext dbContext) : IPatientReposit
                 p.LastName.ToLower().Replace("dj", "d").Replace("č", "c").Replace("ć", "c").Replace("š", "s").Replace("ž", "z").Replace("đ", "d").Contains(plain) ||
                 (p.PreferredName != null && p.PreferredName.ToLower().Replace("dj", "d").Replace("č", "c").Replace("ć", "c").Replace("š", "s").Replace("ž", "z").Replace("đ", "d").Contains(plain)) ||
                 (p.Email != null && p.Email.ToLower().Contains(lower)) ||
-                p.PatientNumber.ToLower().Contains(lower));
+                (p.PatientNumber != null && p.PatientNumber.ToLower().Contains(lower)));
         }
 
         return query;
