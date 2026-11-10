@@ -177,6 +177,7 @@ if (patient is null) return PatientErrors.NotFound;
 ### Deactivate instead of delete
 
 - Patients: `POST /patients/{id}/deactivate { reason? }` / `reactivate` (any clinic role). Refused while appointments are ahead: 409 `Patient.HasUpcomingAppointments` with the count as error metadata (`"Patient.HasUpcomingAppointments.count"`). Inactive patients are left out of `GET /patients` (default `status=Active`; `status=all` lifts it), search, and booking (409 `Patient.Inactive`). `DELETE /patients/{id}` only for a duplicate without history, else 409 `Patient.HasHistory`
+- **Card number** (`PatientNumber`): null for a patient saved with `withoutCard: true` (booked, not seen yet). `POST /patients/{id}/card { patientNumber? }` opens the card with that number or the clinic's next one (highest + 1); 409 `Patient.AlreadyHasCard` / `Patient.PatientNumberAlreadyExists`. For a patient without a card, cancelled and no-show visits are not history: deleting them also soft-deletes those visits
 - Staff: `POST /staff/{id}/deactivate` / `reactivate` (owner). Deactivation also deactivates the linked account in the same transaction (self / last owner refused); reactivation leaves the account off. `GET /staff` defaults to active (`isActive=all` for everyone — use it wherever past appointments need provider names). `DELETE /staff/{id}` only without appointments, else 409 `Staff.HasHistory`
 - Allergies and emergency contacts are soft-deleted
 - `SendResultErrorsAsync` sends error metadata as extra `{ name: "code.key", reason: value }` entries

@@ -28,5 +28,7 @@ public record CreatePatientCommand(
     bool SmsOptIn,
     bool EmailOptIn,
     string? ReferredBySource,
-    string? Notes) : IRequest<ErrorOr<PatientResponse>>;
+    string? Notes,
+    /// <summary>Booked but not seen yet: no card number until the card is opened.</summary>
+    bool WithoutCard = false) : IRequest<ErrorOr<PatientResponse>>;
 

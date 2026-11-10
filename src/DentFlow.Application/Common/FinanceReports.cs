@@ -26,7 +26,7 @@ public sealed record FinanceSummaryResponse(
 public sealed record FinanceDebtorRow(
     Guid PatientId,
     string PatientName,
-    string PatientNumber,
+    string? PatientNumber,
     string? PhoneMobile,
     decimal Balance,
     decimal OverdueBalance,
