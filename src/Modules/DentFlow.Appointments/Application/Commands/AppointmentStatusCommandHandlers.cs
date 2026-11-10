@@ -28,6 +28,11 @@ public class RescheduleAppointmentCommandHandler(
         if (!AppointmentStatus.CanReschedule(appointment.Status))
             return AppointmentErrors.CannotReschedule;
 
+        // N-04: no moving into the past. Only a new start counts: lengthening the visit of a
+        // patient already in the chair keeps a start that has passed (user report 2026-11-10).
+        if (command.NewStartAt != appointment.StartAt && AppointmentLimits.StartsInThePast(command.NewStartAt))
+            return AppointmentErrors.StartsInThePast;
+
         // Dragged to another doctor's column: they get the same checks as at booking (DT-01/02, DT-08)
         var providerId = command.NewProviderId ?? appointment.ProviderId;
         if (providerId != appointment.ProviderId)
@@ -55,7 +60,10 @@ public class RescheduleAppointmentCommandHandler(
                 appointment.PatientId, command.NewStartAt, command.NewEndAt, command.Id, cancellationToken))
             return AppointmentErrors.PatientConflict;
 
-        appointment.Reschedule(command.NewStartAt, command.NewEndAt, providerId);
+        // Still due at the new time (the same window as check-in, DT-09): the patient who is
+        // waiting stays checked in. Moved days ahead, they check in again then.
+        var stillDue = DateTime.UtcNow >= command.NewStartAt - AppointmentLimits.ArrivalWindowBeforeStart;
+        appointment.Reschedule(command.NewStartAt, command.NewEndAt, providerId, keepCheckIn: stillDue);
         await repo.UpdateAsync(appointment, cancellationToken);
 
         return AppointmentResponse.FromEntity(appointment);

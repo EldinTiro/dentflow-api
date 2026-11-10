@@ -16,6 +16,9 @@ public static class AppointmentErrors
     public static readonly Error PatientConflict =
         Error.Conflict("Appointment.PatientConflict", "This patient already has an appointment at this time.");
 
+    public static readonly Error StartsInThePast =
+        Error.Validation("Appointment.StartsInThePast", "An appointment cannot start in the past.");
+
     public static readonly Error NotYetDue =
         Error.Conflict("Appointment.NotYetDue", "This appointment is not due yet. Check-in and treatment start on the day of the visit.");
 

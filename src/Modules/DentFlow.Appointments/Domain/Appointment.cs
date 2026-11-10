@@ -97,15 +97,23 @@ public class Appointment : TenantAuditableEntity
         SetUpdated();
     }
 
-    /// <summary>Moves the visit; <paramref name="newProviderId"/> also hands it to another doctor.</summary>
-    public void Reschedule(DateTime newStartAt, DateTime newEndAt, Guid? newProviderId = null)
+    /// <summary>
+    /// Moves the visit or changes its length; <paramref name="newProviderId"/> also hands it to
+    /// another doctor. A checked-in patient stays checked in when <paramref name="keepCheckIn"/>
+    /// (the visit is still due); otherwise the visit is Scheduled again.
+    /// </summary>
+    public void Reschedule(DateTime newStartAt, DateTime newEndAt, Guid? newProviderId = null, bool keepCheckIn = false)
     {
         if (newProviderId.HasValue)
             ProviderId = newProviderId.Value;
         StartAt = newStartAt;
         EndAt = newEndAt;
         DurationMinutes = (int)(newEndAt - newStartAt).TotalMinutes;
-        Status = AppointmentStatus.Scheduled;
+        if (!(keepCheckIn && Status == AppointmentStatus.CheckedIn))
+        {
+            Status = AppointmentStatus.Scheduled;
+            CheckedInAt = null;
+        }
         SetUpdated();
     }
 
