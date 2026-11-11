@@ -14,7 +14,8 @@ public static class AppointmentStatus
         new Dictionary<string, string[]>
         {
             [Scheduled]  = [CheckedIn, InProgress, Cancelled, NoShow],
-            [CheckedIn]  = [InProgress, Cancelled],
+            // Straight to Completed too: the app has no "Start treatment" step (2026-11-11)
+            [CheckedIn]  = [InProgress, Completed, Cancelled],
             [InProgress] = [Completed],
         };
 
