@@ -7,6 +7,7 @@ namespace DentFlow.Integration.Tests;
 /// <summary>
 /// An invoice can name the appointment it bills, and an appointment is billed at most once
 /// (user report: "Bill patient" stayed enabled on a visit that was already invoiced).
+/// Only a visit the patient came to is billed (user request 2026-11-13).
 /// </summary>
 [Collection("Integration")]
 public class AppointmentInvoiceTests(DentFlowAppFactory factory)
@@ -24,7 +25,7 @@ public class AppointmentInvoiceTests(DentFlowAppFactory factory)
         return (await r.Content.ReadFromJsonAsync<IdDto>())!.Id;
     }
 
-    private async Task<(Guid Patient, Guid Appointment)> VisitAsync()
+    private async Task<(Guid Patient, Guid Appointment)> VisitAsync(string? status = "CheckedIn")
     {
         var patient = await PostIdAsync("/api/v1/patients", new
         {
@@ -35,12 +36,18 @@ public class AppointmentInvoiceTests(DentFlowAppFactory factory)
             staffType = "Dentist", firstName = "Dr", lastName = "Bill", email = $"bill-{Guid.NewGuid():N}@clinic.com", colorHex = "#3B82F6"
         });
         var type = await PostIdAsync("/api/v1/appointment-types", new { name = $"bill-{Guid.NewGuid():N}", defaultDurationMinutes = 30, colorHex = "#10B981" });
-        var start = DateTime.UtcNow.Date.AddDays(30).AddHours(9);
+        // Soon enough to check in (arrival opens 12 hours before the start)
+        var start = DateTime.UtcNow.AddHours(2);
         var appointment = await PostIdAsync("/api/v1/appointments", new
         {
             patientId = patient, providerId = doctor, appointmentTypeId = type,
             startAt = start.ToString("o"), endAt = start.AddMinutes(30).ToString("o"), chiefComplaint = "Extraction", source = "Staff"
         });
+        if (status is not null)
+        {
+            var r = await _owner.PatchAsJsonAsync($"/api/v1/appointments/{appointment}/status", new { status });
+            r.IsSuccessStatusCode.Should().BeTrue(await r.Content.ReadAsStringAsync());
+        }
         return (patient, appointment);
     }
 
@@ -97,6 +104,32 @@ public class AppointmentInvoiceTests(DentFlowAppFactory factory)
 
         r.StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await r.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Invoice.AppointmentNotFound");
+    }
+
+    [Theory]
+    [InlineData(null)]       // still Scheduled: the patient is not there yet
+    [InlineData("NoShow")]
+    [InlineData("Cancelled")]
+    public async Task Invoice_ForAVisitThePatientDidNotComeTo_Returns409(string? status)
+    {
+        var (patient, appointment) = await VisitAsync(status);
+
+        var r = await BillAsync(patient, appointment);
+
+        r.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await r.Content.ReadAsStringAsync()).Should().ContainEquivalentOf("Invoice.AppointmentNotAttended");
+    }
+
+    [Theory]
+    [InlineData("CheckedIn")]
+    [InlineData("Completed")]
+    public async Task Invoice_OnceThePatientHasArrived_IsAllowed(string status)
+    {
+        var (patient, appointment) = await VisitAsync("CheckedIn");
+        if (status == "Completed")
+            (await _owner.PatchAsJsonAsync($"/api/v1/appointments/{appointment}/status", new { status })).IsSuccessStatusCode.Should().BeTrue();
+
+        (await BillAsync(patient, appointment)).StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Fact]
