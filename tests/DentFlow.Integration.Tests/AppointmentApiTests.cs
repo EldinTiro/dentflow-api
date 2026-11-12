@@ -162,6 +162,22 @@ public class AppointmentApiTests(DentFlowAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    // User request 2026-11-11: no "Start treatment" step in the app any more; a patient who
+    // came in is finished straight from Checked in
+    [Fact]
+    public async Task StatusTransition_CheckedIn_To_Completed_Succeeds()
+    {
+        var apptId = await CreateBookedAppointment();
+        (await _admin.PatchAsJsonAsync($"/api/v1/appointments/{apptId}/status", new { status = "CheckedIn" }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await _admin.PatchAsJsonAsync($"/api/v1/appointments/{apptId}/status",
+            new { status = "Completed" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        (await response.Content.ReadFromJsonAsync<AppointmentDto>())!.Status.Should().Be("Completed");
+    }
+
     [Fact]
     public async Task CancelAppointment_ScheduledAppointment_Returns200()
     {
