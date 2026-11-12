@@ -54,6 +54,8 @@ public class CreateInvoiceCommandHandler(IInvoiceRepository repo, IAppointmentRe
             // The visit must be this patient's (in this clinic), and billed only once (user report)
             if (await appointments.GetPatientIdAsync(appointmentId, ct) != cmd.PatientId)
                 return BillingErrors.AppointmentNotFound;
+            if (!await appointments.WasAttendedAsync(appointmentId, ct))
+                return BillingErrors.AppointmentNotAttended;
             if (await repo.HasActiveInvoiceForAppointmentAsync(appointmentId, ct))
                 return BillingErrors.AppointmentAlreadyBilled;
         }

@@ -20,4 +20,7 @@ public interface IAppointmentReader
 
     /// <summary>Whose appointment this is, or null when the clinic has no such appointment.</summary>
     Task<Guid?> GetPatientIdAsync(Guid appointmentId, CancellationToken ct);
+
+    /// <summary>Whether the patient came to this visit: checked in, in treatment or completed.</summary>
+    Task<bool> WasAttendedAsync(Guid appointmentId, CancellationToken ct);
 }
