@@ -57,6 +57,9 @@ public static class StaffErrors
     public static readonly Error HasHistory =
         Error.Conflict("Staff.HasHistory", "This person has appointments. Deactivate them instead.");
 
+    public static readonly Error CannotDeleteSelf =
+        Error.Conflict("Staff.CannotDeleteSelf", "You can't delete your own profile.");
+
     public static readonly Error BlockedTimeNotFound =
         Error.NotFound("Staff.BlockedTimeNotFound", "Staff blocked time was not found.");
 }

@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IUserAccountDirectory, UserAccountDirectory>();
         services.AddScoped<IStaffDirectory, StaffDirectory>();
         services.AddScoped<IAppointmentReader, AppointmentReader>();
+        services.AddScoped<IPeoplePurger, PeoplePurger>();
         services.AddScoped<IPatientHistoryReader, PatientHistoryReader>();
         services.AddScoped<IPatientInsightsReader, PatientInsightsReader>();
         services.AddScoped<IPatientTimelineReader, PatientTimelineReader>();

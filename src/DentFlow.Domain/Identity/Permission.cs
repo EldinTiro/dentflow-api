@@ -34,8 +34,14 @@ public static class Permission
     /// </summary>
     public const string PatientsManage = "patients.manage";
 
+    /// <summary>
+    /// Delete for good: a patient with everything on their record, or a staff profile with
+    /// no appointments. Owner only (user request 2026-11-13); everyone else deactivates.
+    /// </summary>
+    public const string RecordsPurge = "records.purge";
+
     public static readonly IReadOnlyList<string> All =
     [
-        DashboardView, BillingView, BillingCollect, FinanceAdjust, FinanceView, PeopleManage, PatientsManage,
+        DashboardView, BillingView, BillingCollect, FinanceAdjust, FinanceView, PeopleManage, PatientsManage, RecordsPurge,
     ];
 }
