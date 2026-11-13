@@ -104,7 +104,7 @@ public class Tenant : BaseEntity { }
 - **PKs**: `Guid` (never `int` identity)
 - **Money**: `decimal` mapped to `NUMERIC(10,2)`
 - **Timestamps**: `DateTime` always UTC, column type `TIMESTAMPTZ`
-- **Soft deletes**: Set `IsDeleted = true` + `DeletedAt` — never `DELETE FROM`
+- **Soft deletes**: Set `IsDeleted = true` + `DeletedAt` — never `DELETE FROM` (the Administrator's permanent delete, `IPeoplePurger`, is the only exception)
 - **Naming**: snake_case tables, set explicitly per entity via `.ToTable("snake_case_name")` in `ApplicationDbContext` / the `Persistence/Configurations/` classes. There is **no** `UseSnakeCaseNamingConvention()` call — new entities must declare their table name themselves
 - **Patient-scoped requests**: a command or query that takes a `Guid PatientId` must implement `IPatientScoped`; `PatientScopeBehavior` then answers 404 `Patient.NotFound` unless that patient exists in the caller's clinic. `PatientScopeRules` (architecture tests) enforces it. Never trust a patient or provider id from the request as a bare foreign key (DT-01/02)
 - **Tenant scoping**: Automatic via EF global query filters — never add manual `WHERE tenant_id = ...`, and never `IgnoreQueryFilters()` + a hand-written tenant check (that is how the dashboard read zeros for every clinic, QA-003). Tenant resolves from the `tid` claim, then the subdomain; `TenantStore` reads the `tenants` table
@@ -180,6 +180,7 @@ if (patient is null) return PatientErrors.NotFound;
 - **Card number** (`PatientNumber`): null for a patient saved with `withoutCard: true` (booked, not seen yet). `POST /patients/{id}/card { patientNumber? }` opens the card with that number or the clinic's next one (highest + 1); 409 `Patient.AlreadyHasCard` / `Patient.PatientNumberAlreadyExists`. For a patient without a card, cancelled and no-show visits are not history: deleting them also soft-deletes those visits
 - Staff: `POST /staff/{id}/deactivate` / `reactivate` (owner). Deactivation also deactivates the linked account in the same transaction (self / last owner refused); reactivation leaves the account off. `GET /staff` defaults to active (`isActive=all` for everyone — use it wherever past appointments need provider names). `DELETE /staff/{id}` only without appointments, else 409 `Staff.HasHistory`
 - Allergies and emergency contacts are soft-deleted
+- **The one hard delete** (user request 2026-11-13): `records.purge`, owner only. `DELETE /patients/{id}/permanent` removes the patient and everything on the record (visits, invoices and payments, plans, tooth chart, medical data, documents and their files). `DELETE /staff/{id}/permanent` removes a profile with no appointments and its sign-in account (409 `Staff.HasHistory` otherwise, 409 `Staff.CannotDeleteSelf`). It lives in `IPeoplePurger`; nothing else may `DELETE`
 - `SendResultErrorsAsync` sends error metadata as extra `{ name: "code.key", reason: value }` entries
 
 ## Multi-Tenancy Rules
