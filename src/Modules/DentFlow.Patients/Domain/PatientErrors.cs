@@ -10,6 +10,9 @@ public static class PatientErrors
     public static readonly Error AlreadyExists =
         Error.Conflict("Patient.AlreadyExists", "A patient with this email already exists.");
 
+    public static readonly Error AlreadyHasCard =
+        Error.Conflict("Patient.AlreadyHasCard", "This patient's card is already open.");
+
     public static readonly Error PatientNumberAlreadyExists =
         Error.Conflict("Patient.PatientNumberAlreadyExists", "A patient with this patient number already exists.");
 

@@ -189,6 +189,15 @@ if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Seed:De
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
    .AllowAnonymous();
 
+// Which build is running (user request 2026-11-13): CI writes Build__Commit and Build__Time
+// into the image; a local run has neither, so both are null and the app shows nothing.
+app.MapGet("/api/v1/version", (IConfiguration config) => Results.Ok(new
+    {
+        commit = config["Build:Commit"] is { Length: > 0 } c ? c : null,
+        builtAt = config["Build:Time"] is { Length: > 0 } t ? t : null,
+    }))
+   .AllowAnonymous();
+
 // Hangfire dashboard + recurring jobs — skip in Testing environment
 if (!app.Environment.IsEnvironment("Testing"))
 {

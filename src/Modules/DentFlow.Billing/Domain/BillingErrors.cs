@@ -10,6 +10,10 @@ public static class BillingErrors
     public static readonly Error AppointmentAlreadyBilled =
         Error.Conflict("Invoice.AppointmentAlreadyBilled", "This appointment has already been billed. Void that invoice first to bill it again.");
 
+    // Nothing to bill for a visit the patient has not come to (user request 2026-11-13)
+    public static readonly Error AppointmentNotAttended =
+        Error.Conflict("Invoice.AppointmentNotAttended", "A visit is billed once the patient has arrived.");
+
     public static readonly Error InvoiceNotFound =
         Error.NotFound("Invoice.NotFound", "Invoice was not found.");
 

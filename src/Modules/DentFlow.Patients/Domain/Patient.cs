@@ -6,7 +6,8 @@ namespace DentFlow.Patients.Domain;
 public class Patient : TenantAuditableEntity
 {
     public Guid? UserId { get; private set; }
-    public string PatientNumber { get; private set; } = default!;
+    /// <summary>The kartoteka (card) number; null until the card is opened at the first visit.</summary>
+    public string? PatientNumber { get; private set; }
     public string FirstName { get; private set; } = default!;
     public string LastName { get; private set; } = default!;
     public string? PreferredName { get; private set; }
@@ -54,11 +55,12 @@ public class Patient : TenantAuditableEntity
     /// paper kartoteka ("3453"). The old "P-000050" format counts as 50, so a clinic that used
     /// it carries on from 51. Numbers that are neither ("1963-2") are left out.
     /// </summary>
-    public static string NextNumber(IEnumerable<string> existingNumbers)
+    public static string NextNumber(IEnumerable<string?> existingNumbers)
     {
         var highest = System.Numerics.BigInteger.Zero;
         foreach (var raw in existingNumbers)
         {
+            if (raw is null) continue; // patients whose card is not opened yet
             var number = raw.Trim();
             if (number.StartsWith("P-", StringComparison.OrdinalIgnoreCase))
                 number = number[2..];
@@ -68,8 +70,22 @@ public class Patient : TenantAuditableEntity
         return (highest + 1).ToString();
     }
 
+    public bool HasCard => PatientNumber is not null;
+
+    /// <summary>
+    /// Opens the card of a patient saved without one (client request 2026-11-10: booked by
+    /// email, card opened when they first come).
+    /// </summary>
+    public ErrorOr<Success> OpenCard(string patientNumber)
+    {
+        if (HasCard) return PatientErrors.AlreadyHasCard;
+        PatientNumber = patientNumber;
+        SetUpdated();
+        return Result.Success;
+    }
+
     public static Patient Create(
-        string patientNumber,
+        string? patientNumber,
         string firstName,
         string lastName,
         DateOnly? dateOfBirth,

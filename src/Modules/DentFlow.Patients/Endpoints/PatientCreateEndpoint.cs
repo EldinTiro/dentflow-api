@@ -26,7 +26,7 @@ public class PatientCreateEndpoint(ISender sender) : Endpoint<CreatePatientReque
             req.Email, req.PhoneMobile, req.PhoneHome, req.PhoneWork, req.PreferredContactMethod,
             req.AddressLine1, req.AddressLine2, req.City, req.StateProvince, req.PostalCode,
             req.CountryCode, req.Occupation, req.PreferredProviderId, req.SmsOptIn, req.EmailOptIn,
-            req.ReferredBySource, req.Notes);
+            req.ReferredBySource, req.Notes, req.WithoutCard);
 
         var result = await sender.Send(command, ct);
         if (result.IsError)
@@ -45,6 +45,6 @@ public record CreatePatientRequest(
     string? Email, string? PhoneMobile, string? PhoneHome, string? PhoneWork, ContactMethod? PreferredContactMethod,
     string? AddressLine1, string? AddressLine2, string? City, string? StateProvince, string? PostalCode,
     string? CountryCode, string? Occupation, Guid? PreferredProviderId, bool SmsOptIn, bool EmailOptIn,
-    string? ReferredBySource, string? Notes);
+    string? ReferredBySource, string? Notes, bool WithoutCard = false);
 
 

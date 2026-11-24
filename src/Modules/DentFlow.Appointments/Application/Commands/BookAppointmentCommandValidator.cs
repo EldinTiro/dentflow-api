@@ -33,9 +33,7 @@ public class RescheduleAppointmentCommandValidator : AbstractValidator<Reschedul
 {
     public RescheduleAppointmentCommandValidator()
     {
-        RuleFor(x => x.NewStartAt)
-            .Must(startAt => !AppointmentLimits.StartsInThePast(startAt))
-            .WithMessage("An appointment cannot start in the past.");
+        // "Not in the past" is checked by the handler, which knows whether the start changes
         RuleFor(x => x.NewEndAt).GreaterThan(x => x.NewStartAt).WithMessage("End time must be after start time.");
         RuleFor(x => x)
             .Must(x => x.NewEndAt - x.NewStartAt <= AppointmentLimits.MaxLength)

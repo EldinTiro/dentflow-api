@@ -2,7 +2,7 @@
 namespace DentFlow.Patients.Application;
 public record PatientResponse(
     Guid Id,
-    string PatientNumber,
+    string? PatientNumber,
     string FirstName,
     string LastName,
     string? PreferredName,

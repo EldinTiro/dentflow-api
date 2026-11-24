@@ -58,4 +58,22 @@ public class PatientNumberTests
     {
         Patient.NextNumber(["99999999999999999999", "5"]).Should().Be("100000000000000000000");
     }
+
+    [Fact]
+    public void NextNumber_IgnoresPatientsWhoseCardIsNotOpenYet()
+    {
+        Patient.NextNumber(["12", null, "40"]).Should().Be("41");
+    }
+
+    [Fact]
+    public void OpenCard_GivesTheNumber_Once()
+    {
+        var patient = Patient.Create(null, "Anita", "Zaimović", null, null, null);
+
+        patient.HasCard.Should().BeFalse();
+        patient.OpenCard("4252").IsError.Should().BeFalse();
+        patient.PatientNumber.Should().Be("4252");
+        patient.OpenCard("4253").FirstError.Code.Should().Be(PatientErrors.AlreadyHasCard.Code);
+        patient.PatientNumber.Should().Be("4252");
+    }
 }

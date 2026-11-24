@@ -5,7 +5,7 @@ namespace DentFlow.Patients.Application.Queries;
 
 public record PatientSearchResult(
     Guid Id,
-    string PatientNumber,
+    string? PatientNumber,
     string FullName,
     string? PhoneMobile,
     string? Email);

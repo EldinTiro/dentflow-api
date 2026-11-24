@@ -164,4 +164,71 @@ public class RescheduleApiTests(DentFlowAppFactory factory)
 
         r.StatusCode.Should().Be(HttpStatusCode.OK, await r.Content.ReadAsStringAsync());
     }
+    /// <summary>Now, to the minute: the API stores what it is given.</summary>
+    private static DateTime Minute(DateTime t) => new(t.Year, t.Month, t.Day, t.Hour, t.Minute, 0, DateTimeKind.Utc);
+
+    private Task<HttpResponseMessage> SetTimesAsync(Guid id, DateTime start, DateTime end) =>
+        _admin.PutAsJsonAsync($"/api/v1/appointments/{id}/reschedule", new { newStartAt = start.ToString("o"), newEndAt = end.ToString("o") });
+
+    private async Task<Guid> CheckedInVisitAsync(DateTime start)
+    {
+        var id = await AppointmentSeed.BookAsync(factory, await PatientAsync(), start, status: "CheckedIn");
+        return id;
+    }
+
+    // User report 2026-11-10: moving or resizing a checked-in visit on the calendar quietly
+    // undid the check-in, although the patient was still in the waiting room
+    [Fact]
+    public async Task Reschedule_CheckedInVisitLaterToday_StaysCheckedIn()
+    {
+        var start = Minute(DateTime.UtcNow.AddHours(1));
+        var id = await CheckedInVisitAsync(start);
+
+        var r = await SetTimesAsync(id, start.AddMinutes(30), start.AddMinutes(60));
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK, await r.Content.ReadAsStringAsync());
+        (await r.Content.ReadFromJsonAsync<MovedDto>())!.Status.Should().Be("CheckedIn");
+    }
+
+    // A visit moved to another week is not due any more: the patient has to check in again then
+    [Fact]
+    public async Task Reschedule_CheckedInVisitToAnotherWeek_IsScheduledAgain()
+    {
+        var start = Minute(DateTime.UtcNow.AddHours(1));
+        var id = await CheckedInVisitAsync(start);
+
+        var r = await SetTimesAsync(id, start.AddDays(7), start.AddDays(7).AddMinutes(30));
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK, await r.Content.ReadAsStringAsync());
+        (await r.Content.ReadFromJsonAsync<MovedDto>())!.Status.Should().Be("Scheduled");
+    }
+
+    // Lengthening the visit of a patient who is already in the chair: the start is in the past,
+    // but it does not change, so the "no moving into the past" rule does not apply
+    [Fact]
+    public async Task Reschedule_OnlyANewEnd_IsAllowedAfterTheVisitStarted()
+    {
+        var start = Minute(DateTime.UtcNow.AddMinutes(-40));
+        var id = await CheckedInVisitAsync(start);
+
+        var r = await SetTimesAsync(id, start, start.AddMinutes(90));
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK, await r.Content.ReadAsStringAsync());
+        var moved = (await r.Content.ReadFromJsonAsync<MovedDto>())!;
+        moved.EndAt.Should().Be(start.AddMinutes(90));
+        moved.Status.Should().Be("CheckedIn");
+    }
+
+    // N-04 still holds when the start does change
+    [Fact]
+    public async Task Reschedule_ToANewStartInThePast_Returns400()
+    {
+        var start = Minute(DateTime.UtcNow.AddMinutes(-40));
+        var id = await CheckedInVisitAsync(start);
+
+        var r = await SetTimesAsync(id, start.AddMinutes(-60), start);
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await r.Content.ReadAsStringAsync()).Should().Contain("An appointment cannot start in the past.");
+    }
 }

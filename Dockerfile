@@ -31,6 +31,10 @@ RUN dotnet publish "DentFlow.API.csproj" -c Release -o /app/publish /p:UseAppHos
 
 FROM base AS final
 WORKDIR /app
+# The build shown in the app (GET /api/v1/version); CI passes them, a local build leaves them empty
+ARG APP_COMMIT=
+ARG APP_BUILT_AT=
+ENV Build__Commit=$APP_COMMIT     Build__Time=$APP_BUILT_AT
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "DentFlow.API.dll"]
 

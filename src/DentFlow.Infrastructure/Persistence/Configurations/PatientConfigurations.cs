@@ -11,7 +11,8 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.ToTable("patients");
         builder.HasKey(p => p.Id);
 
-        builder.Property(p => p.PatientNumber).HasMaxLength(20).IsRequired();
+        // Null until the card is opened (client request 2026-11-10); unique per clinic when set
+        builder.Property(p => p.PatientNumber).HasMaxLength(20);
         builder.Property(p => p.FirstName).HasMaxLength(100).IsRequired();
         builder.Property(p => p.LastName).HasMaxLength(100).IsRequired();
         builder.Property(p => p.PreferredName).HasMaxLength(100);

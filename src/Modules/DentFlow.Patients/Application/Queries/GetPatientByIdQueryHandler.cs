@@ -19,7 +19,7 @@ public class GetPatientByIdQueryHandler(IPatientRepository patientRepository, IP
 
         return PatientResponse.FromEntity(patient) with
         {
-            HasHistory = await history.HasHistoryAsync(patient.Id, cancellationToken),
+            HasHistory = await history.HasHistoryAsync(patient.Id, missedVisitsAreHistory: patient.HasCard, cancellationToken),
             // The record's header: next appointment, last visit, balance, allergies (patients redesign C)
             Insights = (await insights.GetAsync([patient.Id], DateTime.UtcNow, cancellationToken)).GetValueOrDefault(patient.Id),
         };

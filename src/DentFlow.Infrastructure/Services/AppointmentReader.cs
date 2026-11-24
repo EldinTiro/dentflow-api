@@ -8,6 +8,7 @@ namespace DentFlow.Infrastructure.Services;
 internal sealed class AppointmentReader(ApplicationDbContext db) : IAppointmentReader
 {
     private static readonly string[] Open = [AppointmentStatus.Scheduled, AppointmentStatus.CheckedIn, AppointmentStatus.InProgress];
+    private static readonly string[] Attended = [AppointmentStatus.CheckedIn, AppointmentStatus.InProgress, AppointmentStatus.Completed];
 
     public Task<int> CountUpcomingForPatientAsync(Guid patientId, DateTime now, CancellationToken ct) =>
         db.Appointments.CountAsync(a => a.PatientId == patientId && Open.Contains(a.Status) && a.EndAt > now, ct);
@@ -20,4 +21,7 @@ internal sealed class AppointmentReader(ApplicationDbContext db) : IAppointmentR
 
     public Task<Guid?> GetPatientIdAsync(Guid appointmentId, CancellationToken ct) =>
         db.Appointments.Where(a => a.Id == appointmentId).Select(a => (Guid?)a.PatientId).FirstOrDefaultAsync(ct);
+
+    public Task<bool> WasAttendedAsync(Guid appointmentId, CancellationToken ct) =>
+        db.Appointments.AnyAsync(a => a.Id == appointmentId && Attended.Contains(a.Status), ct);
 }
